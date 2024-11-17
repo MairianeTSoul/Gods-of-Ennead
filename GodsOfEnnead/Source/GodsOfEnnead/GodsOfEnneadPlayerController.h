@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "GodsOfEnneadPlayerController.generated.h"
+class ACardActor;
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAnimationFinished);
 
 UCLASS()
 class GODSOFENNEAD_API AGodsOfEnneadPlayerController : public APlayerController
@@ -17,6 +19,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void MovePlayerToTarget();
 
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnAnimationFinished OnAnimationFinished;
+
+	UFUNCTION(BlueprintCallable, Category = "CardsController")
+	void SpawnActors();
+
+	TArray<ACardActor*> SpawnedActors;
+
 private:
 	void UpdateMovement(float DeltaTime);
 	void Tick(float DeltaTime);
@@ -28,4 +38,9 @@ private:
 	float MoveDuration;    // Время перемещения
 	float ElapsedTime;     // Время, прошедшее с начала движения
 	bool bIsMoving;        // Флаг, указывающий на движение
+
+	FTimerHandle SpawnTimerHandle;
+	int32 SpawnedActorCount = 0;
+
+	void SpawnActorStep(const FVector& StartLocation, const FRotator& StartRotation);
 };

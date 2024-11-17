@@ -1,9 +1,12 @@
 #include "GodsOfEnneadPlayerController.h"
 #include "EngineUtils.h"
+#include "Components/WidgetComponent.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
+#include "Public/CardActor.h"
+#include "Blueprint/UserWidget.h"
 
 void AGodsOfEnneadPlayerController::BeginPlay()
 {
@@ -20,8 +23,8 @@ void AGodsOfEnneadPlayerController::BeginPlay()
 
     bEnableClickEvents = false;
     bEnableMouseOverEvents = false;
-    SetIgnoreLookInput(true);  // Ignore look input
-    SetIgnoreMoveInput(true);  // Ignore move input
+    SetIgnoreLookInput(true);
+    SetIgnoreMoveInput(true);
 
     if (APawn* ControlledPawn = GetPawn())
     {
@@ -41,13 +44,12 @@ void AGodsOfEnneadPlayerController::BeginPlay()
         GetPawn()->SetActorLocation(InitialLocation);
     }
 
-    EndLocation = FVector(7076.87f, 6673.92f, 2516.89f);
-    EndRotation = FRotator(-68.99f, -0.60f, 0.00f);
+    EndLocation = FVector(7456.00f, 6669.00f, 1726.00f);
+    EndRotation = FRotator(-75.99f, -0.60f, 0.00f);
 
     MoveDuration = 3.0f;
 
-    const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(GetWorld());
-    if (CurrentLevelName == "Game")    
+    if (const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(GetWorld()); CurrentLevelName == "Game")    
     {
         MovePlayerToTarget();
     }
@@ -67,7 +69,18 @@ void AGodsOfEnneadPlayerController::MovePlayerToTarget()
 
     SetTickableWhenPaused(true);
     SetActorTickEnabled(true);
-    UE_LOG(LogTemp, Warning, TEXT("StartRotation: %s, EndRotation: %s"), *StartRotation.ToString(), *EndRotation.ToString());
+}
+
+void AGodsOfEnneadPlayerController::SpawnActors()
+{
+    FVector SpawnStartLocation(8266.00f, 7537.00f, 563.00f);
+    FRotator SpawnStartRotation(90.00f, 90.0f, -90.0f);
+
+    SpawnedActorCount = 0;
+    GetWorld()->GetTimerManager().SetTimer(SpawnTimerHandle, [this, SpawnStartLocation, SpawnStartRotation]()
+    {
+        SpawnActorStep(SpawnStartLocation, SpawnStartRotation);
+    }, 0.03f, true);
 }
 
 void AGodsOfEnneadPlayerController::UpdateMovement(float DeltaTime)
@@ -102,14 +115,90 @@ void AGodsOfEnneadPlayerController::UpdateMovement(float DeltaTime)
     {
         bIsMoving = false;
         SetActorTickEnabled(false);
+
+        OnAnimationFinished.Broadcast();
+        SpawnActors();
     }
 }
-
-
-
 
 void AGodsOfEnneadPlayerController::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
     UpdateMovement(DeltaTime);
+}
+
+void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLocation, const FRotator& StartSpawnRotation)
+{
+    constexpr int32 MaxCards = 108;
+
+    if (SpawnedActorCount >= MaxCards)
+    {
+        GetWorld()->GetTimerManager().ClearTimer(SpawnTimerHandle);
+        UE_LOG(LogTemp, Warning, TEXT("All actors spawned. Total: %d"), SpawnedActors.Num());
+        return;
+    }
+
+    FVector FinalCardLocation(7569.0f, 7538.0f, 563.0f);
+    FRotator FinalCardRotation(90.0f, 19.471221f, -160.528779f);
+    FVector FinalCardScale(1.0f, 0.75f, 1.0f);
+
+    FVector SpawnNewCardLocation;
+    FRotator SpawnNewCardRotation;
+
+    if (SpawnedActorCount == MaxCards - 1)
+    {
+        SpawnNewCardLocation = FinalCardLocation;
+        SpawnNewCardRotation = FinalCardRotation;
+    }
+    else
+    {
+        SpawnNewCardLocation = StartSpawnLocation + FVector(0.0f, 0.0f, SpawnedActorCount * 1.0f);
+        SpawnNewCardRotation = FinalCardRotation; // + FRotator(0.0f, 180.0f, 0.0f);
+    }
+
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.Owner = this;
+
+    if (ACardActor* SpawnedActor = GetWorld()->SpawnActor<ACardActor>(ACardActor::StaticClass(), SpawnNewCardLocation, SpawnNewCardRotation, SpawnParams))
+    {
+        SpawnedActors.Add(SpawnedActor);
+
+        if (!SpawnedActor->GetRootComponent())
+        {
+            USceneComponent* DefaultRoot = NewObject<USceneComponent>(SpawnedActor, USceneComponent::StaticClass(), TEXT("DefaultSceneRoot"));
+            SpawnedActor->SetRootComponent(DefaultRoot);
+            DefaultRoot->RegisterComponent();
+
+            SpawnedActor->SetActorLocationAndRotation(SpawnNewCardLocation, SpawnNewCardRotation);
+            SpawnedActor->SetActorScale3D(FinalCardScale);
+        }
+
+        if (UWidgetComponent* WidgetComponent = NewObject<UWidgetComponent>(SpawnedActor, UWidgetComponent::StaticClass(), TEXT("CardWidget")))
+        {
+            WidgetComponent->AttachToComponent(SpawnedActor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+            WidgetComponent->RegisterComponent();
+
+            WidgetComponent->SetDrawSize(FVector2D(500.0f, 500.0f));
+            WidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+            WidgetComponent->SetPivot(FVector2D(0.5f, 0.5f));
+
+            const TSubclassOf<UUserWidget> WidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP__Card.WBP__Card_C"));
+            if (WidgetClass)
+            {
+                WidgetComponent->SetWidgetClass(WidgetClass);
+                WidgetComponent->SetVisibility(true);
+                WidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+
+                UE_LOG(LogTemp, Warning, TEXT("WidgetComponent added to actor successfully."));
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to load widget class."));
+            }
+        }
+
+        UE_LOG(LogTemp, Warning, TEXT("Actor %d spawned at location: %s"), SpawnedActorCount, *SpawnNewCardLocation.ToString());
+    }
+
+    ++SpawnedActorCount;
 }
