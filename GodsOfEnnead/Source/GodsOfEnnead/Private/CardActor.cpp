@@ -1,26 +1,28 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+﻿#include "CardActor.h"
+#include "Components/BoxComponent.h"
+#include "Engine/Engine.h"
 
-
-#include "GodsOfEnnead/Public/CardActor.h"
-
-
-// Sets default values
 ACardActor::ACardActor()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	Object = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Object"));
+	Object->SetupAttachment(RootComponent);
+	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionComponent"));
+	CollisionComponent->SetupAttachment(Object);
+	CollisionComponent->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+	CollisionComponent->SetBoxExtent(FVector(0.152500f, 5.092500f, 7.177500f));
 }
 
-// Called when the game starts or when spawned
-void ACardActor::BeginPlay()
+void ACardActor::MoveToHand()
 {
-	Super::BeginPlay();
-	
+	FVector TargetLocation = FVector(7280.0f, 5676.0f, 563.0f);
+	SetActorLocation(TargetLocation);
+	UE_LOG(LogTemp, Log, TEXT("Card moved to hand: %s"), *TargetLocation.ToString());
 }
 
-// Called every frame
-void ACardActor::Tick(float DeltaTime)
+void ACardActor::OnCardClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
 {
-	Super::Tick(DeltaTime);
+	UE_LOG(LogTemp, Log, TEXT("Card clicked: %s"), *GetName());
+	MoveToHand();
 }
-

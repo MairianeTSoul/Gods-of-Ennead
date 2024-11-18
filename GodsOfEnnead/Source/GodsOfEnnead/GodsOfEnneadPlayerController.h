@@ -26,6 +26,13 @@ public:
 	void SpawnActors();
 
 	TArray<ACardActor*> SpawnedActors;
+	virtual void SetupInputComponent() override;
+	void HandleClick();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cards")
+	ACardActor* SelectedCardActor;
+
+	void SelectCard(ACardActor* CardActor);
 
 private:
 	void UpdateMovement(float DeltaTime);

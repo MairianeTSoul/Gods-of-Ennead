@@ -12,20 +12,16 @@ void AGodsOfEnneadPlayerController::BeginPlay()
 {
     Super::BeginPlay();
     
-    FInputModeUIOnly InputMode;
+    // Включение событий кликов
+    bEnableClickEvents = true;
+    bEnableMouseOverEvents = true;
+
+    // Настройка ввода для работы с мышью
+    FInputModeGameAndUI InputMode;
     InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-
-    if (APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0))
-    {
-        PlayerController->bShowMouseCursor = true;
-        PlayerController->SetInputMode(InputMode);
-    }
-
-    bEnableClickEvents = false;
-    bEnableMouseOverEvents = false;
-    SetIgnoreLookInput(true);
-    SetIgnoreMoveInput(true);
-
+    SetInputMode(InputMode);
+    bShowMouseCursor = true;
+    
     if (APawn* ControlledPawn = GetPawn())
     {
         ControlledPawn->DisableInput(this);
@@ -201,4 +197,51 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
     }
 
     ++SpawnedActorCount;
+}
+
+void AGodsOfEnneadPlayerController::SetupInputComponent()
+{
+    Super::SetupInputComponent();
+
+    if (InputComponent)
+    {
+        InputComponent->BindAction("SelectCard", IE_Pressed, this, &AGodsOfEnneadPlayerController::HandleClick);
+    }
+}
+
+void AGodsOfEnneadPlayerController::HandleClick()
+{
+    FHitResult HitResult;
+    GetHitResultUnderCursor(ECC_Visibility, false, HitResult);
+
+    if (AActor* HitActor = HitResult.GetActor())
+    {
+        if (ACardActor* ClickedCard = Cast<ACardActor>(HitActor))
+        {
+            SelectCard(ClickedCard);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Clicked actor is not a card."));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No actor under cursor."));
+    }
+}
+
+void AGodsOfEnneadPlayerController::SelectCard(ACardActor* CardActor)
+{
+    if (CardActor)
+    {
+        SelectedCardActor = CardActor;
+        UE_LOG(LogTemp, Log, TEXT("Card selected: %s"), *CardActor->GetName());
+
+        SelectedCardActor->MoveToHand();
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No card actor found to select."));
+    }
 }
