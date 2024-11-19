@@ -28,4 +28,16 @@ class GODSOFENNEAD_API UCardUserWidget : public UUserWidget
 	UPROPERTY(EditAnywhere, Category = "Stats")
 	FSlateBrush new_icon_character;
 
+	UFUNCTION(BlueprintCallable, Category = "Stats")
+	int GetNewAttack();
+
+	UFUNCTION(BlueprintCallable, Category = "Stats")
+	int GetNewHp();
+
+	UFUNCTION(BlueprintCallable, Category = "Stats")
+	FString GetNewNameCharacter();
+
+	UFUNCTION(BlueprintCallable, Category = "Stats")
+	FSlateBrush GetNewIconCharacter();
+
 };

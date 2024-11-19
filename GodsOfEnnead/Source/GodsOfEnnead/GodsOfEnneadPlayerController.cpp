@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Public/CardActor.h"
 #include "Blueprint/UserWidget.h"
+#include "CardUserWidget.h"
 
 void AGodsOfEnneadPlayerController::BeginPlay()
 {
@@ -133,6 +134,7 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
         UE_LOG(LogTemp, Warning, TEXT("All actors spawned. Total: %d"), SpawnedActors.Num());
         return;
     }
+    FString Arr[] = { TEXT("of"), TEXT("Tomorrow") };
 
     FVector FinalCardLocation(7569.0f, 7538.0f, 563.0f);
     FRotator FinalCardRotation(90.0f, 19.471221f, -160.528779f);
@@ -168,33 +170,52 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
             SpawnedActor->SetActorLocationAndRotation(SpawnNewCardLocation, SpawnNewCardRotation);
             SpawnedActor->SetActorScale3D(FinalCardScale);
         }
+        UDataTable* DT;
+        FSoftObjectPath UnitDataTablePath = FSoftObjectPath(TEXT("/Game/DataBase/DT_Characters.DT_Characters"));
+        DT = Cast<UDataTable>(UnitDataTablePath.ResolveObject());
+        //TODO need c++ class for struct!!!
+        //FCardCharacterStruct* Item = DT->FindRow<FCardCharacterStruct>("New_Row_0", "");
 
-        if (UWidgetComponent* WidgetComponent = NewObject<UWidgetComponent>(SpawnedActor, UWidgetComponent::StaticClass(), TEXT("CardWidget")))
+
+        if (DT)
         {
-            WidgetComponent->AttachToComponent(SpawnedActor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-            WidgetComponent->RegisterComponent();
-
-            WidgetComponent->SetDrawSize(FVector2D(500.0f, 500.0f));
-            WidgetComponent->SetWidgetSpace(EWidgetSpace::World);
-            WidgetComponent->SetPivot(FVector2D(0.5f, 0.5f));
-
-            const TSubclassOf<UUserWidget> WidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP__Card.WBP__Card_C"));
-            if (WidgetClass)
+            if (UWidgetComponent* WidgetComponent = NewObject<UWidgetComponent>(SpawnedActor, UWidgetComponent::StaticClass(), TEXT("CardWidget")))
             {
-                WidgetComponent->SetWidgetClass(WidgetClass);
-                WidgetComponent->SetVisibility(true);
-                WidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+                WidgetComponent->AttachToComponent(SpawnedActor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+                WidgetComponent->RegisterComponent();
 
-                UE_LOG(LogTemp, Warning, TEXT("WidgetComponent added to actor successfully."));
+                WidgetComponent->SetDrawSize(FVector2D(500.0f, 500.0f));
+                WidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+                WidgetComponent->SetPivot(FVector2D(0.5f, 0.5f));
+
+                const TSubclassOf<UUserWidget> WidgetClass = LoadClass<UCardUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Card.WBP_Card_C"));
+                if (WidgetClass)
+                {
+                    WidgetComponent->SetWidgetClass(WidgetClass);
+                    WidgetComponent->SetVisibility(true);
+                    WidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+
+                    auto* cardWidget = (UCardUserWidget*)(WidgetComponent->GetWidget());
+                    cardWidget->new_attack = DataVal[SpawnedActorCount % g_cardTypes].a;
+                    cardWidget->new_hp = DataVal[SpawnedActorCount % g_cardTypes].b;
+                    cardWidget->new_name_character = DataVal[SpawnedActorCount % g_cardTypes].str;
+
+                    //TODO Set image here
+                    //cardWidget->new_icon_character.SetResourceObject()
+
+
+                    /*WidgetComponent->AddChildToVerticalBox(NewInventoryItemWidget);*/
+                    UE_LOG(LogTemp, Warning, TEXT("WidgetComponent added to actor successfully."));
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Error, TEXT("Failed to load widget class."));
+                }
             }
-            else
-            {
-                UE_LOG(LogTemp, Error, TEXT("Failed to load widget class."));
+
+                UE_LOG(LogTemp, Warning, TEXT("Actor %d spawned at location: %s"), SpawnedActorCount, *SpawnNewCardLocation.ToString());
             }
         }
-
-        UE_LOG(LogTemp, Warning, TEXT("Actor %d spawned at location: %s"), SpawnedActorCount, *SpawnNewCardLocation.ToString());
-    }
 
     ++SpawnedActorCount;
 }
