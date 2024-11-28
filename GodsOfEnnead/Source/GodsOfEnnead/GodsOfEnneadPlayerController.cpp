@@ -8,20 +8,32 @@
 #include "Public/CardActor.h"
 #include "Blueprint/UserWidget.h"
 #include "CardUserWidget.h"
+#include "GameFramework/Character.h"
 
+AGodsOfEnneadPlayerController::AGodsOfEnneadPlayerController()
+{
+    static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClass(TEXT("/Game/BP/BP_Character.BP_Character"));
+    if (PlayerPawnClass.Succeeded())
+    {
+        FVector ddSpawnLocation = FVector(0.0f, 0.0f, 300.0f); // Задайте начальную позицию
+        FRotator ddSpawnRotation = FRotator(0.0f, 0.0f, 0.0f); // Задайте начальное вращение
+        GetWorld()->SpawnActor<ACharacter>(PlayerPawnClass.Class, ddSpawnLocation, ddSpawnRotation);
+    };
+
+    for (int i = 0; i < )
+}
 void AGodsOfEnneadPlayerController::BeginPlay()
 {
     Super::BeginPlay();
+    UE_LOG(LogTemp, Error, TEXT("BeginPlay"));
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    PC->bShowMouseCursor = true;
+    PC->bEnableClickEvents = true;
+    PC->bEnableMouseOverEvents = true;
     
-    // Включение событий кликов
-    bEnableClickEvents = true;
-    bEnableMouseOverEvents = true;
-
-    // Настройка ввода для работы с мышью
     FInputModeGameAndUI InputMode;
     InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
     SetInputMode(InputMode);
-    bShowMouseCursor = true;
     
     if (APawn* ControlledPawn = GetPawn())
     {
@@ -41,14 +53,56 @@ void AGodsOfEnneadPlayerController::BeginPlay()
         GetPawn()->SetActorLocation(InitialLocation);
     }
 
-    EndLocation = FVector(7456.00f, 6669.00f, 1726.00f);
-    EndRotation = FRotator(-75.99f, -0.60f, 0.00f);
-
+    EndLocation = FVector(7107.0f, 6736.00f, 1927.00f);
+    EndRotation = FRotator(-65.00f, 0.00f, 0.00f);
     MoveDuration = 3.0f;
 
     if (const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(GetWorld()); CurrentLevelName == "Game")    
     {
         MovePlayerToTarget();
+    }
+}
+
+void AGodsOfEnneadPlayerController::SetupInputComponent()
+{
+    Super::SetupInputComponent();
+
+    if (InputComponent)
+    {
+        InputComponent->BindAction("SelectCard", IE_Pressed, this, &AGodsOfEnneadPlayerController::TakeCard);
+    }}
+
+void AGodsOfEnneadPlayerController::TakeCard()
+{
+    UE_LOG(LogTemp, Log, TEXT("AGodsOfEnneadPlayerController::TakeCard"));
+
+   FHitResult HitResult;
+    if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
+    {
+        if (ACardActor* ClickedCard = Cast<ACardActor>(HitResult.GetActor()))
+        {
+            UE_LOG(LogTemp, Log, TEXT("AGodsOfEnneadPlayerController Card clicked: %s"), *ClickedCard->GetName());
+            if (AGadsOfEnneadCharacter* PlayerCharacter = Cast<AGadsOfEnneadCharacter>(GetPawn()))
+            {
+                PlayerCharacter->TakeCard(ClickedCard);
+                if (ClickedCard->GetActorLocation().X < 7500.0f)
+                {
+                    ClickedCard->MoveToHand(--CardsInHand);
+                }
+                else
+                {
+                    ClickedCard->MoveToHand(CardsInHand++);
+                }
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Actor under cursor is not a card."));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No actor under cursor."));
     }
 }
 
@@ -111,9 +165,6 @@ void AGodsOfEnneadPlayerController::UpdateMovement(float DeltaTime)
     if (Alpha >= 1.0f)
     {
         bIsMoving = false;
-        SetActorTickEnabled(false);
-
-        OnAnimationFinished.Broadcast();
         SpawnActors();
     }
 }
@@ -176,93 +227,43 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
         //TODO need c++ class for struct!!!
         //FCardCharacterStruct* Item = DT->FindRow<FCardCharacterStruct>("New_Row_0", "");
 
-
-        if (DT)
+    
+        if (UWidgetComponent* WidgetComponent = NewObject<UWidgetComponent>(SpawnedActor, UWidgetComponent::StaticClass(), TEXT("CardWidget")))
         {
-            if (UWidgetComponent* WidgetComponent = NewObject<UWidgetComponent>(SpawnedActor, UWidgetComponent::StaticClass(), TEXT("CardWidget")))
+            WidgetComponent->AttachToComponent(SpawnedActor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+            WidgetComponent->RegisterComponent();
+
+            WidgetComponent->SetDrawSize(FVector2D(500.0f, 500.0f));
+            WidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+            WidgetComponent->SetPivot(FVector2D(0.5f, 0.5f));
+
+            const TSubclassOf<UUserWidget> WidgetClass = LoadClass<UCardUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Card.WBP_Card_C"));
+            if (WidgetClass)
             {
-                WidgetComponent->AttachToComponent(SpawnedActor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-                WidgetComponent->RegisterComponent();
+                WidgetComponent->SetWidgetClass(WidgetClass);
+                WidgetComponent->SetVisibility(true);
+                WidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
 
-                WidgetComponent->SetDrawSize(FVector2D(500.0f, 500.0f));
-                WidgetComponent->SetWidgetSpace(EWidgetSpace::World);
-                WidgetComponent->SetPivot(FVector2D(0.5f, 0.5f));
+                auto* cardWidget = (UCardUserWidget*)(WidgetComponent->GetWidget());
+                cardWidget->new_attack = DataVal[SpawnedActorCount % g_cardTypes].a;
+                cardWidget->new_hp = DataVal[SpawnedActorCount % g_cardTypes].b;
+                cardWidget->new_name_character = DataVal[SpawnedActorCount % g_cardTypes].str;
 
-                const TSubclassOf<UUserWidget> WidgetClass = LoadClass<UCardUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Card.WBP_Card_C"));
-                if (WidgetClass)
-                {
-                    WidgetComponent->SetWidgetClass(WidgetClass);
-                    WidgetComponent->SetVisibility(true);
-                    WidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
-
-                    auto* cardWidget = (UCardUserWidget*)(WidgetComponent->GetWidget());
-                    cardWidget->new_attack = DataVal[SpawnedActorCount % g_cardTypes].a;
-                    cardWidget->new_hp = DataVal[SpawnedActorCount % g_cardTypes].b;
-                    cardWidget->new_name_character = DataVal[SpawnedActorCount % g_cardTypes].str;
-
-                    //TODO Set image here
-                    //cardWidget->new_icon_character.SetResourceObject()
+                //TODO Set image here
+                //cardWidget->new_icon_character.SetResourceObject()
 
 
-                    /*WidgetComponent->AddChildToVerticalBox(NewInventoryItemWidget);*/
-                    UE_LOG(LogTemp, Warning, TEXT("WidgetComponent added to actor successfully."));
-                }
-                else
-                {
-                    UE_LOG(LogTemp, Error, TEXT("Failed to load widget class."));
-                }
+                /*WidgetComponent->AddChildToVerticalBox(NewInventoryItemWidget);*/
+                UE_LOG(LogTemp, Warning, TEXT("WidgetComponent added to actor successfully."));
             }
-
-                UE_LOG(LogTemp, Warning, TEXT("Actor %d spawned at location: %s"), SpawnedActorCount, *SpawnNewCardLocation.ToString());
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to load widget class."));
             }
         }
+
+        UE_LOG(LogTemp, Warning, TEXT("Actor %d spawned at location: %s"), SpawnedActorCount, *SpawnNewCardLocation.ToString());
+    }
 
     ++SpawnedActorCount;
-}
-
-void AGodsOfEnneadPlayerController::SetupInputComponent()
-{
-    Super::SetupInputComponent();
-
-    if (InputComponent)
-    {
-        InputComponent->BindAction("SelectCard", IE_Pressed, this, &AGodsOfEnneadPlayerController::HandleClick);
-    }
-}
-
-void AGodsOfEnneadPlayerController::HandleClick()
-{
-    FHitResult HitResult;
-    GetHitResultUnderCursor(ECC_Visibility, false, HitResult);
-
-    if (AActor* HitActor = HitResult.GetActor())
-    {
-        if (ACardActor* ClickedCard = Cast<ACardActor>(HitActor))
-        {
-            SelectCard(ClickedCard);
-        }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT("Clicked actor is not a card."));
-        }
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("No actor under cursor."));
-    }
-}
-
-void AGodsOfEnneadPlayerController::SelectCard(ACardActor* CardActor)
-{
-    if (CardActor)
-    {
-        SelectedCardActor = CardActor;
-        UE_LOG(LogTemp, Log, TEXT("Card selected: %s"), *CardActor->GetName());
-
-        SelectedCardActor->MoveToHand();
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("No card actor found to select."));
-    }
 }

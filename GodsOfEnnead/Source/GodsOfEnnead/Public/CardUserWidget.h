@@ -17,7 +17,6 @@ class GODSOFENNEAD_API UCardUserWidget : public UUserWidget
 	GENERATED_BODY()
 
 
-
 	public:
 	UPROPERTY(EditAnywhere, Category = "Stats")
 	int new_attack;

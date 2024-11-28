@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "GadsOfEnneadCharacter.h"
 #include "GodsOfEnneadPlayerController.generated.h"
 class ACardActor;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAnimationFinished);
@@ -25,11 +26,13 @@ UCLASS()
 class GODSOFENNEAD_API AGodsOfEnneadPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+	AGodsOfEnneadPlayerController();
 
 public:
 	
 	virtual void BeginPlay() override;
 
+	void TakeCard();
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void MovePlayerToTarget();
 
@@ -40,13 +43,14 @@ public:
 	void SpawnActors();
 
 	TArray<ACardActor*> SpawnedActors;
-	virtual void SetupInputComponent() override;
-	void HandleClick();
+	TArray<FCardPlace*> PlayerCards;
+	TArray<FCardPlace*> BotCards;
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cards")
 	ACardActor* SelectedCardActor;
 
-	void SelectCard(ACardActor* CardActor);
+	virtual void SetupInputComponent() override;
 
 private:
 	void UpdateMovement(float DeltaTime);
@@ -72,9 +76,11 @@ private:
 	UPROPERTY()
 	int32 SpawnedActorCount = 0;
 
+	int32 CardsInHand = 0;
+	
 	//TODO Use TArray instead of raw arrays
 	UPROPERTY()
-	FSomeDataStruct DataVal[g_cardTypes]{ {2, 2, "Bastet"}, {5, 7, "Ra"}, {6, 9, "Test"}};
+	FSomeDataStruct DataVal[g_cardTypes]{ {2, 2, "Bastet"}, {5, 7, "Ra"}, {6, 9, "Isis"}};
 
 	void SpawnActorStep(const FVector& StartLocation, const FRotator& StartRotation);
 };
