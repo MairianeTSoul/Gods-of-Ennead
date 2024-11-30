@@ -43,6 +43,8 @@ void ACardActor::MoveToHand(int32 cardNum)
 	UE_LOG(LogTemp, Log, TEXT("Card moved to hand: %s"), *TargetLocation.ToString());
 }
 
+
+
 void ACardActor::BeginPlay()
 {
 	Super::BeginPlay();
@@ -62,4 +64,32 @@ void ACardActor::BeginPlay()
 	// 		5.0f         // Толщина линий
 	// 	);
 	// }
+}
+
+void ACardActor::AnimateTo(const FVector& StartPos, const FVector& FinalPos)
+{
+	bIsAnimating = true;
+	StartPosition = StartPos;
+	TargetPosition = FinalPos;
+	ElapsedTime = 0.0f;
+}
+
+void ACardActor::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (bIsAnimating)
+	{
+		ElapsedTime += DeltaTime;
+		const float Alpha = FMath::Clamp(ElapsedTime / AnimationDuration, 0.0f, 1.0f);
+
+		const FVector NewPosition = FMath::Lerp(StartPosition, TargetPosition, Alpha);
+		SetActorLocation(NewPosition);
+
+		if (Alpha >= 1.0f)
+		{
+			bIsAnimating = false;
+			ElapsedTime = 0.0f;
+		}
+	}
 }

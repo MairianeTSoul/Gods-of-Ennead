@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "GadsOfEnneadCharacter.h"
+#include "Cards/Hand.h"
 #include "GodsOfEnneadPlayerController.generated.h"
 class ACardActor;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAnimationFinished);
@@ -12,6 +13,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAnimationFinished);
 const uint32 g_cardCount = 108;
 const uint32 g_cardTypes = 3;
 
+const FRotator SHOW_ROTATION = FRotator(90.0f, 19.471221f, -160.528779f);
+const FRotator HIDE_ROTATION = FRotator(-90.0f, 19.471221f, -160.528779f);
+	
 USTRUCT()
 struct FSomeDataStruct
 {
@@ -36,15 +40,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void MovePlayerToTarget();
 
+	bool bGameOver = false;
+	void StartGame();
+	void PlayRound();
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cards")
+	TArray<UHand*> PlayersHands;
+
+	void DealCards(int32 NumCards, bool bIsPlayer);
+	
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnAnimationFinished OnAnimationFinished;
 
 	UFUNCTION(BlueprintCallable, Category = "CardsController")
 	void SpawnActors();
 
-	TArray<ACardActor*> SpawnedActors;
-	TArray<FCardPlace*> PlayerCards;
-	TArray<FCardPlace*> BotCards;
+	TArray<ACardActor*> AllCardsActors;
+	TArray<ACardActor*> DeckCardsActors;
+	TArray<ACardActor*> ShowDeckCardsActors;
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cards")

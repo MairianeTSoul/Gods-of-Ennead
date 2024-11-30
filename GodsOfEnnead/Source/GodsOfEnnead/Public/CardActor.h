@@ -20,11 +20,15 @@ public:
 	UStaticMeshComponent* Object;
 	UPROPERTY(VisibleAnywhere, Category = "InteractiveObjectsActor")
 	UBoxComponent* CollisionComponent;
-};
 
-struct FCardPlace
-{
-	FVector Position;
-	bool bIsPlayer = false;
-	ACardActor* CardActor;
+	void AnimateTo(const FVector& StartPos, const FVector& FinalPos);
+	virtual void Tick(float DeltaTime) override;
+
+private:
+	bool bIsAnimating = false;
+	FVector StartPosition;
+	FVector TargetPosition;
+	float ElapsedTime;
+	const float AnimationDuration = 1.0f;
+
 };
