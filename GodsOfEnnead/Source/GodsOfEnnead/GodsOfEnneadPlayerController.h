@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "TurnStatus.h"
 #include "GameFramework/PlayerController.h"
-#include "GadsOfEnneadCharacter.h"
 #include "Cards/Hand.h"
 #include "GodsOfEnneadPlayerController.generated.h"
 class ACardActor;
@@ -41,6 +41,8 @@ public:
 	void MovePlayerToTarget();
 
 	bool bGameOver = false;
+	ETurnStatus CurrentTurnStatus = ETurnStatus::Waiting;
+
 	void StartGame();
 	void PlayRound();
 	
@@ -90,7 +92,8 @@ private:
 	int32 SpawnedActorCount = 0;
 
 	int32 CardsInHand = 0;
-	
+
+	void FixDeck(TArray<ACardActor*> Deck);
 	//TODO Use TArray instead of raw arrays
 	UPROPERTY()
 	FSomeDataStruct DataVal[g_cardTypes]{ {2, 2, "Bastet"}, {5, 7, "Ra"}, {6, 9, "Isis"}};

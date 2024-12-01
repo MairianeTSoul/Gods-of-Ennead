@@ -53,8 +53,8 @@ void AGodsOfEnneadPlayerController::BeginPlay()
         GetPawn()->SetActorLocation(InitialLocation);
     }
 
-    EndLocation = FVector(7157.0f, 7256.00f, 2420.00f);
-    EndRotation = FRotator(-68.00f, 0.00f, 0.00f);
+    EndLocation = FVector(7157.0f, 7200.00f, 2380.00f);
+    EndRotation = FRotator(-66.00f, 0.00f, 0.00f);
     MoveDuration = 3.0f;
 
     if (const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(GetWorld()); CurrentLevelName == "Game")    
@@ -74,35 +74,52 @@ void AGodsOfEnneadPlayerController::SetupInputComponent()
 
 void AGodsOfEnneadPlayerController::TakeCard()
 {
-    UE_LOG(LogTemp, Log, TEXT("AGodsOfEnneadPlayerController::TakeCard"));
-
-   FHitResult HitResult;
-    if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
+    if (CurrentTurnStatus == ETurnStatus::Waiting_Choose)
     {
-        if (ACardActor* ClickedCard = Cast<ACardActor>(HitResult.GetActor()))
+       FHitResult HitResult;
+        if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
         {
-            UE_LOG(LogTemp, Log, TEXT("AGodsOfEnneadPlayerController Card clicked: %s"), *ClickedCard->GetName());
-            if (AGadsOfEnneadCharacter* PlayerCharacter = Cast<AGadsOfEnneadCharacter>(GetPawn()))
+            if (ACardActor* ClickedCard = Cast<ACardActor>(HitResult.GetActor()))
             {
-                PlayerCharacter->TakeCard(ClickedCard);
-                if (ClickedCard->GetActorLocation().X < 7500.0f)
+                if (!DeckCardsActors.Contains(ClickedCard) && !ShowDeckCardsActors.Contains(ClickedCard)) return;
+               
+                UE_LOG(LogTemp, Log, TEXT("Player: Card clicked: %s"), *ClickedCard->GetName());
+                PlayersHands[1]->MoveToHand(ClickedCard);
+                if (DeckCardsActors.Contains(ClickedCard))
                 {
-                    ClickedCard->MoveToHand(--CardsInHand);
+                    DeckCardsActors.Remove(ClickedCard);
+                    FixDeck(DeckCardsActors);
                 }
                 else
                 {
-                    ClickedCard->MoveToHand(CardsInHand++);
+                    ShowDeckCardsActors.Remove(ClickedCard);
+                    FixDeck(ShowDeckCardsActors);
                 }
+                CurrentTurnStatus = ETurnStatus::Player_Turn;
             }
         }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT("Actor under cursor is not a card."));
-        }
     }
-    else
+
+    if (CurrentTurnStatus == ETurnStatus::Player_Turn)
     {
-        UE_LOG(LogTemp, Warning, TEXT("No actor under cursor."));
+       FHitResult HitResult;
+        if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
+        {
+            if (ACardActor* ClickedCard = Cast<ACardActor>(HitResult.GetActor()))
+            {
+                bool bCardFound = PlayersHands[1]->CardPositions.FindByPredicate([ClickedCard](const FCardPosition& CardPosition)
+                {
+                    return CardPosition.CardActor == ClickedCard;
+                }) != nullptr;
+                if (!bCardFound) return;
+               
+                UE_LOG(LogTemp, Log, TEXT("Player: Card clicked: %s"), *ClickedCard->GetName());
+                PlayersHands[1]->MoveToDeck(ClickedCard, ShowDeckCardsActors.Num() ? ShowDeckCardsActors.Last()->GetActorLocation()
+                                                                                    :  FVector(7840.0f, 7680.0f, 563.0f));
+                ShowDeckCardsActors.Add(ClickedCard);
+                CurrentTurnStatus = ETurnStatus::Waiting_Choose;
+            }
+        }
     }
 }
 
@@ -124,18 +141,17 @@ void AGodsOfEnneadPlayerController::MovePlayerToTarget()
 
 void AGodsOfEnneadPlayerController::StartGame()
 {
+    UE_LOG(LogTemp, Log, TEXT("StartGame: Deal Cards to Player"));
+    DealCards(g_maxInHand, false);
+    UE_LOG(LogTemp, Log, TEXT("StartGame: Deal Cards to Bot"));
+    DealCards(g_maxInHand, true);
 
-    DealCards(7, false);
-    DealCards(7, true);
-
-    while (!bGameOver)
-    {
-        PlayRound();
-    }
+    PlayRound();
 }
 
 void AGodsOfEnneadPlayerController::PlayRound()
 {
+    CurrentTurnStatus = ETurnStatus::Waiting_Choose;
 }
 
 void AGodsOfEnneadPlayerController::DealCards(int32 NumCards, bool bIsPlayer)
@@ -149,9 +165,9 @@ void AGodsOfEnneadPlayerController::DealCards(int32 NumCards, bool bIsPlayer)
     
     for (int32 i = 0; i < NumCards; ++i)
     {
-        // 7280.0f, 5676.0f + cardNum * 500.0f, 563.0f + cardNum * 0.1f
         ACardActor* Card = DeckCardsActors.Last();
         DeckCardsActors.Remove(Card);
+        FixDeck(DeckCardsActors);
         FVector TargetLocation = FVector(7280.0f, 5676.0f + i * 500.0f, 563.0f + i * 0.1f);
 
         if (!bIsPlayer)
@@ -230,12 +246,21 @@ void AGodsOfEnneadPlayerController::Tick(float DeltaTime)
     UpdateMovement(DeltaTime);
 }
 
+void AGodsOfEnneadPlayerController::FixDeck(TArray<ACardActor*> Deck)
+{
+    for (int i = 0; i < Deck.Num(); i++)
+    {
+        Deck[i]->SetActorLocation(Deck[i]->GetActorLocation() + FVector(0.0f, 0.0f, -2.0f));
+    }
+}
+
 void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLocation, const FRotator& StartSpawnRotation)
 {
     if (SpawnedActorCount >= g_cardCount)
     {
+        UE_LOG(LogTemp, Warning, TEXT("ClearTimer"));
         GetWorld()->GetTimerManager().ClearTimer(SpawnTimerHandle);
-        UE_LOG(LogTemp, Warning, TEXT("All actors spawned. Total: %d"), AllCardsActors.Num());
+        UE_LOG(LogTemp, Warning, TEXT("All actors spawned. Total: %d"), g_cardCount);
         StartGame();
         return;
     }
@@ -255,7 +280,7 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
     }
     else
     {
-        SpawnNewCardLocation = StartSpawnLocation + FVector(0.0f, 0.0f, SpawnedActorCount * 1.0f);
+        SpawnNewCardLocation = StartSpawnLocation + FVector(0.0f, 0.0f, SpawnedActorCount * 2.0f);
         // SpawnNewCardRotation = HIDE_ROTATION; TODO return after setting material on card
         SpawnNewCardRotation = FinalCardRotation; // TODO remove after setting material on card
     }
@@ -267,12 +292,14 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
     {
         
         if (SpawnedActorCount == g_cardCount - 1)
+        {
             ShowDeckCardsActors.Add(SpawnedActor);
+        }
         else
+        {
             DeckCardsActors.Add(SpawnedActor);
+        }
         
-        AllCardsActors.Add(SpawnedActor);
-
         if (!SpawnedActor->GetRootComponent())
         {
             USceneComponent* DefaultRoot = NewObject<USceneComponent>(SpawnedActor, USceneComponent::StaticClass(), TEXT("DefaultSceneRoot"));
@@ -323,7 +350,7 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
             }
         }
 
-        UE_LOG(LogTemp, Warning, TEXT("Actor %d spawned at location: %s"), SpawnedActorCount, *SpawnNewCardLocation.ToString());
+        // UE_LOG(LogTemp, Warning, TEXT("Actor %d spawned at location: %s"), SpawnedActorCount, *SpawnNewCardLocation.ToString());
     }
 
     ++SpawnedActorCount;

@@ -8,9 +8,60 @@ void UHand::AddCard(ACardActor* Card, const FVector& Position)
 
 void UHand::RemoveCard(ACardActor* Card)
 {
-	CardPositions.RemoveAll([Card](const FCardPosition& CardPosition)
+	FCardPosition* FoundPosition = CardPositions.FindByPredicate([Card](const FCardPosition& CardPosition)
 	{
 		return CardPosition.CardActor == Card;
 	});
-	CardsInHand--;
+
+	if (FoundPosition)
+	{
+		FoundPosition->CardActor = nullptr;
+		CardsInHand--;
+		if (CardsInHand >= g_maxInHand)
+		{
+			for (int32 i = 0; i < CardsInHand; ++i)
+			{
+				if (CardPositions[i].CardActor == nullptr)
+				{
+					CardPositions[i].CardActor = CardPositions[i + 1].CardActor;
+					if (CardPositions[i].CardActor)
+					{
+						CardPositions[i].CardActor->SetActorLocation(CardPositions[i].Position);
+					}
+					CardPositions[i + 1].CardActor = nullptr;
+				}
+			}
+
+			CardPositions.RemoveAt(CardPositions.Num() - 1);
+			UE_LOG(LogTemp, Log, TEXT("Пустая позиция заполнена, последняя ячейка удалена."));
+		}
+	}
+	
+	
+}
+
+void UHand::MoveToHand(ACardActor* CardActor)
+{
+	for (FCardPosition& Position : CardPositions)
+	{
+		if (Position.CardActor == nullptr)
+		{
+			Position.CardActor = CardActor;
+			CardActor->SetActorLocation(Position.Position);
+			UE_LOG(LogTemp, Log, TEXT("Карта перемещена на свободное место."));
+			return;
+		}
+	}
+
+	FVector LastCardPos = CardPositions.Last().Position;
+	FVector NewPosition = LastCardPos + FVector(0.0f, 500.0f, 0.0f);
+	AddCard(CardActor, NewPosition);
+	CardActor->SetActorLocation(NewPosition);
+	UE_LOG(LogTemp, Log, TEXT("Карта добавлена в конец руки. %d"), CardsInHand);
+}
+
+void UHand::MoveToDeck(ACardActor* CardActor, const FVector& NewLocation)
+{
+	RemoveCard(CardActor);
+	CardActor->SetActorLocation(NewLocation + FVector(0.0f, 0.0f, 1.0f));
 }

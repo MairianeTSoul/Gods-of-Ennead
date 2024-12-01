@@ -27,18 +27,8 @@ ACardActor::ACardActor()
 }
 
 
-void ACardActor::MoveToHand(int32 cardNum)
+void ACardActor::MoveToHand(FVector TargetLocation)
 {
-	FVector TargetLocation;
-	if (GetActorLocation().X < 7500.0f)
-	{
-		TargetLocation = FVector(7569.0f, 7538.0f, 563.0f + gNum*0.3f);
-		gNum++;
-	}
-	else
-	{
-		TargetLocation = FVector(7280.0f, 5676.0f + cardNum * 500.0f, 563.0f + cardNum * 0.1f);
-	}
 	SetActorLocation(TargetLocation);
 	UE_LOG(LogTemp, Log, TEXT("Card moved to hand: %s"), *TargetLocation.ToString());
 }

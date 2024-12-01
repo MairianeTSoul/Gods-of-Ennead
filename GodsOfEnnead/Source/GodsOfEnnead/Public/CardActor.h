@@ -13,7 +13,7 @@ class GODSOFENNEAD_API ACardActor : public AActor
 	
 public:
 	ACardActor();
-	void MoveToHand(int32 cardNum);
+	void MoveToHand(FVector TargetLocation);
 	virtual void BeginPlay() override;
 
 	UPROPERTY(VisibleAnywhere, Category = "InteractiveObjectsActor")

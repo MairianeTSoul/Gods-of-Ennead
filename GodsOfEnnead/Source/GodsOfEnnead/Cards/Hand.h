@@ -4,6 +4,7 @@
 #include "CardPosition.h"
 #include "Hand.generated.h"
 
+inline int32 g_maxInHand = 6;
 UCLASS(Blueprintable)
 class GODSOFENNEAD_API UHand : public UObject
 {
@@ -21,4 +22,6 @@ public:
 
 	void AddCard(ACardActor* Card, const FVector& Position);
 	void RemoveCard(ACardActor* Card);
+	void MoveToHand(ACardActor* CardActor);
+	void MoveToDeck(ACardActor* CardActor, const FVector& NewLocation);
 };
