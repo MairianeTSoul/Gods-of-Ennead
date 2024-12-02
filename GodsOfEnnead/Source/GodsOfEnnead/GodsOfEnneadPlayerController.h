@@ -11,19 +11,9 @@ class ACardActor;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAnimationFinished);
 
 const uint32 g_cardCount = 108;
-const uint32 g_cardTypes = 3;
 
 const FRotator SHOW_ROTATION = FRotator(90.0f, 19.471221f, -160.528779f);
 const FRotator HIDE_ROTATION = FRotator(-90.0f, 19.471221f, -160.528779f);
-	
-USTRUCT()
-struct FSomeDataStruct
-{
-	GENERATED_BODY()
-	int a;
-	int b;
-	FString str;
-};
 
 
 UCLASS()
@@ -71,6 +61,8 @@ private:
 	void UpdateMovement(float DeltaTime);
 	void Tick(float DeltaTime);
 
+	TObjectPtr<UDataTable> CardDataTable;
+
 	UPROPERTY()
 	FVector StartLocation; // Начальная позиция игрока
 	UPROPERTY()
@@ -94,9 +86,6 @@ private:
 	int32 CardsInHand = 0;
 
 	void FixDeck(TArray<ACardActor*> Deck);
-	//TODO Use TArray instead of raw arrays
-	UPROPERTY()
-	FSomeDataStruct DataVal[g_cardTypes]{ {2, 2, "Bastet"}, {5, 7, "Ra"}, {6, 9, "Isis"}};
 
 	void SpawnActorStep(const FVector& StartLocation, const FRotator& StartRotation);
 };

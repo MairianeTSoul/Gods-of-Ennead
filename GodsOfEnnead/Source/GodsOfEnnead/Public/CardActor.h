@@ -6,6 +6,19 @@
 
 class UBoxComponent;
 inline int32 gNum = 1;
+
+USTRUCT(BlueprintType)
+struct FDataCardStruct : public FTableRowBase
+{
+	GENERATED_USTRUCT_BODY()
+	UPROPERTY(EditAnywhere)
+	int hp;
+	UPROPERTY(EditAnywhere)
+	int attack;
+	UPROPERTY(EditAnywhere)
+	FString cardName;
+};
+
 UCLASS(Blueprintable)
 class GODSOFENNEAD_API ACardActor : public AActor
 {
@@ -20,6 +33,15 @@ public:
 	UStaticMeshComponent* Object;
 	UPROPERTY(VisibleAnywhere, Category = "InteractiveObjectsActor")
 	UBoxComponent* CollisionComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "InteractiveObjectsActor")
+	FDataCardStruct CardsData;
+
+	UFUNCTION()
+	FDataCardStruct GetDataCard();
+
+	UFUNCTION(BlueprintCallable, Category = "InteractiveObjectsActor")
+	void SetDataCard(int hp, int attack, FString cardName);
 
 	void AnimateTo(const FVector& StartPos, const FVector& FinalPos);
 	virtual void Tick(float DeltaTime) override;

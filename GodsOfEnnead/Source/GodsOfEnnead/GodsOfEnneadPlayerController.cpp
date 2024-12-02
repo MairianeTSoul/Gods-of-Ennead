@@ -20,6 +20,12 @@ AGodsOfEnneadPlayerController::AGodsOfEnneadPlayerController()
         GetWorld()->SpawnActor<ACharacter>(PlayerPawnClass.Class, ddSpawnLocation, ddSpawnRotation);
     };
 
+    static ConstructorHelpers::FObjectFinder<UDataTable> dataCardsObject(TEXT("DataTable'/Game/DataBase/DT_They.DT_They'"));
+    if (dataCardsObject.Succeeded())
+    {
+        CardDataTable = dataCardsObject.Object;
+    }
+
     // for (int i = 0; i < )
 }
 void AGodsOfEnneadPlayerController::BeginPlay()
@@ -309,12 +315,14 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
             SpawnedActor->SetActorLocationAndRotation(SpawnNewCardLocation, SpawnNewCardRotation);
             SpawnedActor->SetActorScale3D(FinalCardScale);
         }
-        UDataTable* DT;
-        FSoftObjectPath UnitDataTablePath = FSoftObjectPath(TEXT("/Game/DataBase/DT_Characters.DT_Characters"));
-        DT = Cast<UDataTable>(UnitDataTablePath.ResolveObject());
-        //TODO need c++ class for struct!!!
-        //FCardCharacterStruct* Item = DT->FindRow<FCardCharacterStruct>("New_Row_0", "");
 
+        TArray<FDataCardStruct*> dtRows;
+        CardDataTable->GetAllRows("", dtRows);
+
+        const int rowIndex = SpawnedActorCount % dtRows.Num();
+
+        FDataCardStruct* Item = dtRows[rowIndex];
+        SpawnedActor->SetDataCard(Item->hp, Item->attack, Item->cardName);
     
         if (UWidgetComponent* WidgetComponent = NewObject<UWidgetComponent>(SpawnedActor, UWidgetComponent::StaticClass(), TEXT("CardWidget")))
         {
@@ -333,15 +341,14 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
                 WidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
 
                 auto* cardWidget = (UCardUserWidget*)(WidgetComponent->GetWidget());
-                cardWidget->new_attack = DataVal[SpawnedActorCount % g_cardTypes].a;
-                cardWidget->new_hp = DataVal[SpawnedActorCount % g_cardTypes].b;
-                cardWidget->new_name_character = DataVal[SpawnedActorCount % g_cardTypes].str;
+                const FDataCardStruct& dataCard = SpawnedActor->GetDataCard();
+                cardWidget->new_attack = dataCard.attack;
+                cardWidget->new_hp = dataCard.hp;
+                cardWidget->new_name_character = dataCard.cardName;
 
                 //TODO Set image here
                 //cardWidget->new_icon_character.SetResourceObject()
 
-
-                /*WidgetComponent->AddChildToVerticalBox(NewInventoryItemWidget);*/
                 UE_LOG(LogTemp, Warning, TEXT("WidgetComponent added to actor successfully."));
             }
             else
