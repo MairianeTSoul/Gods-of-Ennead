@@ -53,15 +53,47 @@ class GODSOFENNEAD_API UChooseSameCharacterNameRule : public URule
 };
 
 UCLASS()
+class GODSOFENNEAD_API UTask : public UObject
+{
+	GENERATED_BODY()
+	public:
+	UPROPERTY(EditAnywhere, Category = "Task")
+	TArray<TSubclassOf<URule>> rules;
+
+	UFUNCTION()
+	virtual bool getStatusTask();
+	UFUNCTION()
+	virtual FString getDescriptionTask();
+};
+
+//UCLASS()
+//class GODSOFENNEAD_API UTaskArifmeticProgressiveValues : public UTask
+//	GENERATED_BODY()
+//public:
+//	UPROPERTY(EditAnywhere, Category = "Task")
+//	TArray<TSubclassOf<URule>> rules;
+//
+//	UTask()
+//	{};
+//	UTask(TArray<TSubclassOf<URule>> new_rules) {
+//		rules = new_rules;
+//	};
+//
+//	bool checkStatusTask();
+//	FString getDescriptionTask();
+//};
+
+UCLASS()
 class GODSOFENNEAD_API UTaskUserWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	public:
-	UPROPERTY(EditAnywhere, Category = "TasksRule")
-	TArray<TSubclassOf<URule>> rules;
-	UFUNCTION()
-	inline TArray<TSubclassOf<URule>>& getRules()
-	{
-		return rules;
-	}
+	UPROPERTY(EditAnywhere, Category = "Task")
+	UTask* task;
+	UFUNCTION(BlueprintCallable, Category = "Task")
+	FString getDescriptionTask();
+
+	UFUNCTION(BlueprintCallable, Category = "Task")
+	bool getStatusTask();
+
 };
