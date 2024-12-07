@@ -10,14 +10,18 @@ UTaskController::UTaskController()
 
 UTaskController::~UTaskController()
 {
+	m_task = nullptr;
 }
 
 void UTaskController::init()
 {
+	m_task = NewObject<UTask>(this, m_taskTemplate);
+
 	if (widgetClass)
 	{
-		//TODO Investigate how to create widget from non UE classes
-		//m_widget = CreateWidget(widgetClass);
+		m_widget = CreateWidget<UTaskUserWidget>(GetWorld(), widgetClass);
+		m_widget->AddToViewport();
+		m_widget->setTask(m_task);
 	}
 }
 

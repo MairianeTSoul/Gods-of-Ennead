@@ -7,7 +7,7 @@
 #include <CardActor.h>
 #include "TaskUserWidget.generated.h"
 
-UCLASS()
+UCLASS(Blueprintable)
 class GODSOFENNEAD_API URule : public UObject
 {
 	GENERATED_BODY()
@@ -20,7 +20,7 @@ class GODSOFENNEAD_API URule : public UObject
 		virtual FString getNameRule();
 };
 
-UCLASS()
+UCLASS(Blueprintable)
 class GODSOFENNEAD_API UChooseSameCoefficientRule : public URule
 {
 	GENERATED_BODY()
@@ -38,7 +38,7 @@ class GODSOFENNEAD_API UChooseSameCoefficientRule : public URule
 		FString getNameRule();
 };
 
-UCLASS()
+UCLASS(Blueprintable)
 class GODSOFENNEAD_API UChooseSameCharacterNameRule : public URule
 {
 	GENERATED_BODY()
@@ -56,14 +56,18 @@ class GODSOFENNEAD_API UChooseSameCharacterNameRule : public URule
 		FString getNameRule();
 };
 
-UCLASS()
+UCLASS(Blueprintable)
 class GODSOFENNEAD_API UTask : public UObject
 {
 	GENERATED_BODY()
 	public:
 	UPROPERTY(EditAnywhere, Category = "Task")
 	TArray<TSubclassOf<URule>> rules;
-	TArray<FDataCardStruct> cardsStruct;
+	UPROPERTY()
+	bool isComplete;
+
+	UFUNCTION()
+	void updateState(TArray<FDataCardStruct>& cards);
 
 	UFUNCTION()
 	virtual bool getStatusTask();
@@ -100,5 +104,8 @@ class GODSOFENNEAD_API UTaskUserWidget : public UUserWidget
 
 	UFUNCTION(BlueprintCallable, Category = "Task")
 	bool getStatusTask();
+
+	UFUNCTION()
+	void setTask(UTask* inTask);
 
 };

@@ -28,9 +28,9 @@ FString UChooseSameCoefficientRule::getNameRule()
 {
 	if (isAttackValue)
 	{
-		return FString::Printf(TEXT("Выберите карту со значением аттаки %d"), valueRule);
+		return FString::Printf(TEXT("Choose card with attack value %d"), valueRule);
 	}
-	return FString::Printf(TEXT("Выберите карту со значением hp %d"), valueRule);
+	return FString::Printf(TEXT("Choose card with hp value %d"), valueRule);
 	
 }
 
@@ -41,7 +41,7 @@ bool UChooseSameCharacterNameRule::checkRule(FDataCardStruct& dataStruct)
 
 FString UChooseSameCharacterNameRule::getNameRule()
 {
-	return "Выберите карту с именем героя " + valueRule;
+	return "Choose card with name character " + valueRule;
 }
 
 bool getStatusTask()
@@ -54,27 +54,22 @@ FString getDescriptionTask()
 	return FString();
 }
 
+void UTask::updateState(TArray<FDataCardStruct>& cards)
+{
+	isComplete = true;
+	for (int i = 0; i < cards.Num(); i++)
+	{
+		isComplete = isComplete && (rules[i].GetDefaultObject())->checkRule(cards[i]);
+	}
+}
+
 bool UTask::getStatusTask()
 {
-	bool statusTasks = false;
-	if (rules.Num() != cardsStruct.Num())
-	{
-		return false;
-	}
-
-	for (int i = 0; i < cardsStruct.Num(); i++)
-	{
-		statusTasks = statusTasks && (rules[i].GetDefaultObject())->checkRule(cardsStruct[i]);
-	}
-	return statusTasks;
+	return isComplete;
 }
 
 FString UTask::getDescriptionTask()
 {
-	if (rules.Num() != cardsStruct.Num()) 
-	{
-		return FString("Task not found");
-	}
 	FString description = "";
 	for (int i = 0; i < rules.Num(); i++)
 	{
@@ -101,4 +96,9 @@ bool UTaskUserWidget::getStatusTask()
 	}
 
 	return task->getStatusTask();
+}
+
+void UTaskUserWidget::setTask(UTask* inTask)
+{
+	task = inTask;
 }

@@ -24,11 +24,12 @@ public:
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = UI)
-	TSubclassOf<UUserWidget> widgetClass;
+	TSubclassOf<UTaskUserWidget> widgetClass;
 
-	//TODO Where we would store tasks?
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UTask> m_taskTemplate;
 	UPROPERTY()
 	TObjectPtr<UTask> m_task;
 	UPROPERTY()
-	TObjectPtr<UUserWidget> m_widget;
+	TObjectPtr<UTaskUserWidget> m_widget;
 };
