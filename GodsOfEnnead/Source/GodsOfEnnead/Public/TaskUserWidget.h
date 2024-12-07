@@ -17,7 +17,7 @@ class GODSOFENNEAD_API URule : public UObject
 		UFUNCTION()
 		virtual bool checkRule(struct FDataCardStruct& dataStruct);
 		UFUNCTION()
-		FString getNameRule() const;
+		virtual FString getNameRule();
 };
 
 UCLASS()
@@ -27,12 +27,15 @@ class GODSOFENNEAD_API UChooseSameCoefficientRule : public URule
 	public:
 		UPROPERTY(EditAnywhere, Category = "TasksRule")
 		int valueRule;
+		UPROPERTY(EditAnywhere, Category = "TasksRule")
+		bool isAttackValue;
 		UChooseSameCoefficientRule() {
 		};
 		UChooseSameCoefficientRule(int value) {
 			valueRule = value;
 		};
 		bool checkRule(struct FDataCardStruct& dataStruct);
+		FString getNameRule();
 };
 
 UCLASS()
@@ -50,6 +53,7 @@ class GODSOFENNEAD_API UChooseSameCharacterNameRule : public URule
 		};
 
 		bool checkRule(struct FDataCardStruct& dataStruct);
+		FString getNameRule();
 };
 
 UCLASS()
@@ -59,6 +63,7 @@ class GODSOFENNEAD_API UTask : public UObject
 	public:
 	UPROPERTY(EditAnywhere, Category = "Task")
 	TArray<TSubclassOf<URule>> rules;
+	TArray<FDataCardStruct> cardsStruct;
 
 	UFUNCTION()
 	virtual bool getStatusTask();
@@ -88,8 +93,8 @@ class GODSOFENNEAD_API UTaskUserWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	public:
-	UPROPERTY(EditAnywhere, Category = "Task")
-	UTask* task;
+	UPROPERTY()
+	TObjectPtr<UTask> task;
 	UFUNCTION(BlueprintCallable, Category = "Task")
 	FString getDescriptionTask();
 
