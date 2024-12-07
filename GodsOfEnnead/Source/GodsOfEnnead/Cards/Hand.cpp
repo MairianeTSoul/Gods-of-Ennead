@@ -1,5 +1,8 @@
 ﻿#include "Hand.h"
 
+#include "Task.h"
+#include "TaskUserWidget.h"
+
 void UHand::AddCard(ACardActor* Card, const FVector& Position)
 {
     CardPositions.Add(FCardPosition(Position, Card));
@@ -64,4 +67,18 @@ void UHand::MoveToDeck(ACardActor* CardActor, const FVector& NewLocation)
 {
 	RemoveCard(CardActor);
 	CardActor->SetActorLocation(NewLocation + FVector(0.0f, 0.0f, 1.0f));
+}
+
+bool UHand::CheckTask(UTask* Task)
+{
+	TArray<FDataCardStruct> Cards;
+	for (const FCardPosition& Position : CardPositions)
+	{
+		if (Position.CardActor)
+		{
+			Cards.Add(Position.CardActor->GetDataCard());
+		}
+	}
+
+	return Task->CheckTaskCompletion(Cards);
 }

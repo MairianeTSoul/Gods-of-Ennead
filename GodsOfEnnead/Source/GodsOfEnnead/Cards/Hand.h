@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "CardPosition.h"
+#include "TaskUserWidget.h"
 #include "Hand.generated.h"
 
 inline int32 g_maxInHand = 6;
@@ -24,4 +25,7 @@ public:
 	void RemoveCard(ACardActor* Card);
 	void MoveToHand(ACardActor* CardActor);
 	void MoveToDeck(ACardActor* CardActor, const FVector& NewLocation);
+
+	UFUNCTION(BlueprintCallable, Category = "Hand")
+	bool CheckTask(UTask* Task);
 };

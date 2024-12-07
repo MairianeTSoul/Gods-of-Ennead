@@ -8,6 +8,7 @@
 #include "Public/CardActor.h"
 #include "Blueprint/UserWidget.h"
 #include "CardUserWidget.h"
+#include "Task.h"
 #include "GameFramework/Character.h"
 
 AGodsOfEnneadPlayerController::AGodsOfEnneadPlayerController()
@@ -101,7 +102,9 @@ void AGodsOfEnneadPlayerController::TakeCard()
                     ShowDeckCardsActors.Remove(ClickedCard);
                     FixDeck(ShowDeckCardsActors);
                 }
+                PlayersHands[1]->CheckTask(CurrentTaskController->Task);
                 CurrentTurnStatus = ETurnStatus::Player_Turn;
+                return;
             }
         }
     }
@@ -123,7 +126,10 @@ void AGodsOfEnneadPlayerController::TakeCard()
                 PlayersHands[1]->MoveToDeck(ClickedCard, ShowDeckCardsActors.Num() ? ShowDeckCardsActors.Last()->GetActorLocation()
                                                                                     :  FVector(7840.0f, 7680.0f, 563.0f));
                 ShowDeckCardsActors.Add(ClickedCard);
+                bool bCheck = PlayersHands[1]->CheckTask(CurrentTaskController->Task);
+                UE_LOG(LogTemp, Error, TEXT("CheckTask: %hhd"), bCheck);
                 CurrentTurnStatus = ETurnStatus::Waiting_Choose;
+                return;
             }
         }
     }
@@ -152,6 +158,7 @@ void AGodsOfEnneadPlayerController::StartGame()
     UE_LOG(LogTemp, Log, TEXT("StartGame: Deal Cards to Bot"));
     DealCards(g_maxInHand, true);
 
+    PlayersHands[1]->CheckTask(CurrentTaskController->Task);
     PlayRound();
 }
 
@@ -190,11 +197,6 @@ void AGodsOfEnneadPlayerController::DealCards(int32 NumCards, bool bIsPlayer)
             PlayersHands[PlayerIndex]->AddCard(Card, TargetLocation);
 
             Card->AnimateTo(Card->GetActorLocation(), TargetLocation);
-            UE_LOG(LogTemp, Warning, TEXT("card location: %s"), *TargetLocation.ToString());
-        }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT("Не удалось создать карту"));
         }
     }
 }
@@ -209,6 +211,17 @@ void AGodsOfEnneadPlayerController::SpawnActors()
     {
         SpawnActorStep(SpawnStartLocation, SpawnStartRotation);
     }, 0.03f, true);
+}
+
+void AGodsOfEnneadPlayerController::DisplayTask()
+{
+    CurrentTaskController = NewObject<UTaskController>();
+    CurrentTaskController->init(GetWorld());
+
+    UE_LOG(LogTemp, Log, TEXT("Task created: Pattern = %hhd, Count = %d, Type = %hhd"),
+        CurrentTaskController->Task->Pattern,
+        CurrentTaskController->Task->Count,
+        CurrentTaskController->Task->Type);
 }
 
 void AGodsOfEnneadPlayerController::UpdateMovement(float DeltaTime)
@@ -264,9 +277,9 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
 {
     if (SpawnedActorCount >= g_cardCount)
     {
-        UE_LOG(LogTemp, Warning, TEXT("ClearTimer"));
         GetWorld()->GetTimerManager().ClearTimer(SpawnTimerHandle);
         UE_LOG(LogTemp, Warning, TEXT("All actors spawned. Total: %d"), g_cardCount);
+        DisplayTask();
         StartGame();
         return;
     }
@@ -348,8 +361,6 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
 
                 //TODO Set image here
                 //cardWidget->new_icon_character.SetResourceObject()
-
-                UE_LOG(LogTemp, Warning, TEXT("WidgetComponent added to actor successfully."));
             }
             else
             {

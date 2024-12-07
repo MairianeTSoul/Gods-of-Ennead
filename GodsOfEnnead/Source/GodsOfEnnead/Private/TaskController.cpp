@@ -2,30 +2,45 @@
 
 
 #include "TaskController.h"
+
+#include "Task.h"
 #include "Components/WidgetComponent.h"
 
 UTaskController::UTaskController()
 {
+	GenerateTask();
+	widgetClass = LoadClass<UTaskUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Task.WBP_Task_C"));
 }
 
 UTaskController::~UTaskController()
 {
-	m_task = nullptr;
+	Task = nullptr;
 }
 
-void UTaskController::init()
+void UTaskController::init(UWorld* World)
 {
-	m_task = NewObject<UTask>(this, m_taskTemplate);
-
 	if (widgetClass)
 	{
-		m_widget = CreateWidget<UTaskUserWidget>(GetWorld(), widgetClass);
-		m_widget->AddToViewport();
-		m_widget->setTask(m_task);
+		TaskWidget = CreateWidget<UTaskUserWidget>(World, widgetClass);
+		TaskWidget->AddToViewport();
+		TaskWidget->setTask(Task);
 	}
 }
 
-void UTaskController::tick(float dt)
+void UTaskController::GenerateTask()
 {
+	const ETaskPattern RandomPattern = static_cast<ETaskPattern>(FMath::RandRange(0, static_cast<int32>(ETaskPattern::NAME)));
+	const int32 RandomCount = FMath::RandRange(3, 5);
+	ETaskType RandomType;
+	if (RandomPattern == ETaskPattern::NAME)
+	{
+		RandomType = ETaskType::SET;
+	}
+	else
+	{
+		RandomType = static_cast<ETaskType>(FMath::RandRange(0, static_cast<int32>(ETaskType::SET)));
+	}
 
+	Task = NewObject<UTask>();
+	Task->InitializeTask(RandomPattern, RandomCount, RandomType);
 }

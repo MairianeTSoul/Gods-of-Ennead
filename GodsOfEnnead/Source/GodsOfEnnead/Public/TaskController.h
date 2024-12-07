@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include <TaskUserWidget.h>
+
+#include "Task.h"
 #include "TaskController.generated.h"
 
 /**
@@ -13,23 +15,24 @@ UCLASS(Blueprintable)
 class GODSOFENNEAD_API UTaskController : public UObject
 {
 	GENERATED_BODY()
+
 public:
 	UTaskController();
 	~UTaskController();
 
 	UFUNCTION(BlueprintCallable)
-	void init();
-	UFUNCTION(BlueprintCallable)
-	void tick(float dt);
+	void init(UWorld* World);
+
+	UFUNCTION()
+	void GenerateTask();
+
+	UPROPERTY()
+	TObjectPtr<UTask> Task;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = UI)
 	TSubclassOf<UTaskUserWidget> widgetClass;
-
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UTask> m_taskTemplate;
+	
 	UPROPERTY()
-	TObjectPtr<UTask> m_task;
-	UPROPERTY()
-	TObjectPtr<UTaskUserWidget> m_widget;
+	TObjectPtr<UTaskUserWidget> TaskWidget;
 };

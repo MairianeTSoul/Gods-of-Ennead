@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "TaskController.h"
 #include "TurnStatus.h"
 #include "GameFramework/PlayerController.h"
 #include "Cards/Hand.h"
@@ -56,6 +57,13 @@ public:
 	ACardActor* SelectedCardActor;
 
 	virtual void SetupInputComponent() override;
+
+	// Task
+	UPROPERTY()
+	TObjectPtr<UTaskController> CurrentTaskController;
+
+	UFUNCTION()
+	void DisplayTask();
 
 private:
 	void UpdateMovement(float DeltaTime);
