@@ -80,5 +80,5 @@ bool UHand::CheckTask(UTask* Task)
 		}
 	}
 
-	return Task->CheckTaskCompletion(Cards);
+	return Task->CheckTaskCompletion(Cards, bIsPlayer);
 }

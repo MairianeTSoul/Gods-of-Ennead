@@ -94,4 +94,5 @@ void ACardActor::SetDataCard(int hp, int attack, FString cardName)
 	CardsData.hp = hp;
 	CardsData.attack = attack;
 	CardsData.cardName = cardName;
+	CardsData.AssociatedActor = this;
 }

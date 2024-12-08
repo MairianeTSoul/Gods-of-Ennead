@@ -90,7 +90,7 @@ void AGodsOfEnneadPlayerController::TakeCard()
             {
                 if (!DeckCardsActors.Contains(ClickedCard) && !ShowDeckCardsActors.Contains(ClickedCard)) return;
                
-                UE_LOG(LogTemp, Log, TEXT("Player: Card clicked: %s"), *ClickedCard->GetName());
+                UE_LOG(LogTemp, Log, TEXT("Player: Card clicked: %s"), *ClickedCard->CardsData.cardName);
                 PlayersHands[1]->MoveToHand(ClickedCard);
                 if (DeckCardsActors.Contains(ClickedCard))
                 {
@@ -122,14 +122,22 @@ void AGodsOfEnneadPlayerController::TakeCard()
                 }) != nullptr;
                 if (!bCardFound) return;
                
-                UE_LOG(LogTemp, Log, TEXT("Player: Card clicked: %s"), *ClickedCard->GetName());
+                UE_LOG(LogTemp, Log, TEXT("Player: Card clicked: %s"), *ClickedCard->CardsData.cardName);
                 PlayersHands[1]->MoveToDeck(ClickedCard, ShowDeckCardsActors.Num() ? ShowDeckCardsActors.Last()->GetActorLocation()
                                                                                     :  FVector(7840.0f, 7680.0f, 563.0f));
                 ShowDeckCardsActors.Add(ClickedCard);
                 bool bCheck = PlayersHands[1]->CheckTask(CurrentTaskController->Task);
                 UE_LOG(LogTemp, Error, TEXT("CheckTask: %hhd"), bCheck);
-                CurrentTurnStatus = ETurnStatus::Waiting_Choose;
-                return;
+                CurrentTurnStatus = ETurnStatus::Computer_Turn;
+
+                FTimerHandle DelayTimerHandle;
+                GetWorld()->GetTimerManager().SetTimer(
+                    DelayTimerHandle,
+                    this,
+                    &AGodsOfEnneadPlayerController::ComputerTurn,
+                    2.0f,
+                    false
+                );
             }
         }
     }
@@ -165,6 +173,113 @@ void AGodsOfEnneadPlayerController::StartGame()
 void AGodsOfEnneadPlayerController::PlayRound()
 {
     CurrentTurnStatus = ETurnStatus::Waiting_Choose;
+}
+
+void AGodsOfEnneadPlayerController::ComputerTurn()
+{
+    ACardActor* ShowDeckTopCard = ShowDeckCardsActors.Last();
+    ACardActor* DeckTopCard = DeckCardsActors.Last();
+
+    TArray<FDataCardStruct> CurrentCards;
+    for (const FCardPosition& Position : PlayersHands[0]->CardPositions)
+    {
+        if (Position.CardActor)
+        {
+            CurrentCards.Add(Position.CardActor->GetDataCard());
+        }
+    }
+
+    CurrentCards.Add(ShowDeckTopCard->GetDataCard());
+    int32 CountWithShowDeck = CurrentTaskController->Task->GetClosestCountToCompletion(CurrentCards);
+    CurrentCards.RemoveAt(CurrentCards.Num() - 1);
+
+    CurrentCards.Add(DeckTopCard->GetDataCard());
+    int32 CountWithDeck = CurrentTaskController->Task->GetClosestCountToCompletion(CurrentCards);
+
+    if (CountWithShowDeck > CountWithDeck)
+    {
+        PlayersHands[0]->MoveToHand(ShowDeckTopCard);
+        ShowDeckCardsActors.Remove(ShowDeckTopCard);
+        UE_LOG(LogTemp, Log, TEXT("Компьютер взял карту из открытой колоды: %s"), *ShowDeckTopCard->CardsData.cardName);
+        FixDeck(ShowDeckCardsActors);
+    }
+    else
+    {
+        PlayersHands[0]->MoveToHand(DeckTopCard);
+        DeckCardsActors.Remove(DeckTopCard);
+        UE_LOG(LogTemp, Log, TEXT("Компьютер взял карту из закрытой колоды: %s"), *DeckTopCard->CardsData.cardName);
+        FixDeck(DeckCardsActors);
+    }
+
+    FTimerHandle DelayTimerHandle;
+    GetWorld()->GetTimerManager().SetTimer(
+        DelayTimerHandle,
+        this,
+        &AGodsOfEnneadPlayerController::DiscardUnnecessaryCard,
+        2.0f,
+        false
+    );
+}
+
+void AGodsOfEnneadPlayerController::DiscardUnnecessaryCard()
+{
+    TArray<FDataCardStruct> CurrentCards;
+    for (const FCardPosition& Position : PlayersHands[0]->CardPositions)
+    {
+        if (Position.CardActor)
+        {
+            CurrentCards.Add(Position.CardActor->GetDataCard());
+        }
+    }
+
+    const int32 CurrentClosestCount = CurrentTaskController->Task->GetClosestCountToCompletion(CurrentCards);
+
+    ACardActor* CardToDeck = PlayersHands[0]->CardPositions[0].CardActor;
+    for (const FCardPosition& Position : PlayersHands[0]->CardPositions)
+    {
+        if (Position.CardActor)
+        {
+            ACardActor* CardToTest = Position.CardActor;
+
+            CurrentCards.Remove(CardToTest->GetDataCard());
+            const int32 NewClosestCount = CurrentTaskController->Task->GetClosestCountToCompletion(CurrentCards);
+            UE_LOG(LogTemp, Log, TEXT("близость к победе для карты %s: %d, без карты: %d"), *CardToTest->CardsData.cardName, CurrentClosestCount, NewClosestCount);
+
+            CurrentCards.Add(CardToTest->GetDataCard());
+
+            if (NewClosestCount >= CurrentClosestCount)
+            {
+                CardToDeck = CardToTest;
+                break;
+            }
+        }
+    }
+    PlayersHands[0]->RemoveCard(CardToDeck);
+    const FVector TargetLocation = ShowDeckCardsActors.Num() > 0
+                                       ? ShowDeckCardsActors.Last()->GetActorLocation() + FVector(0.0f, 0.0f, 2.0f)
+                                       : FVector(7840.0f, 7680.0f, 565.0f);
+    ShowDeckCardsActors.Add(CardToDeck);
+    CardToDeck->SetActorLocation(TargetLocation);
+    
+    UE_LOG(LogTemp, Log, TEXT("Компьютер положил карту в открытую колоду: %s"), *CardToDeck->CardsData.cardName);
+    
+    if (PlayersHands[0]->CheckTask(CurrentTaskController->Task))
+    {
+        if (PlayersHands[1]->CheckTask(CurrentTaskController->Task))
+        {
+            UE_LOG(LogTemp, Log, TEXT("Оба игрока собрали набор."));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Log, TEXT("Компьютер выполнил задачу."));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Log, TEXT("Компьютер завершил ход."));
+    }
+
+    CurrentTurnStatus = ETurnStatus::Waiting_Choose;    
 }
 
 void AGodsOfEnneadPlayerController::DealCards(int32 NumCards, bool bIsPlayer)

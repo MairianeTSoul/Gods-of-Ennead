@@ -49,7 +49,11 @@ public:
 	void InitializeTask(ETaskPattern InPattern, int32 InCount, ETaskType InType);
 
 	UFUNCTION(BlueprintCallable, Category = "Task")
-	bool CheckTaskCompletion(const TArray<FDataCardStruct>& Cards);
+	bool CheckTaskCompletion(const TArray<FDataCardStruct>& Cards, bool bIsCompleteStatusSet);
+
+	UFUNCTION(BlueprintCallable, Category = "Task")
+	int32 GetClosestCountToCompletion(const TArray<FDataCardStruct>& Cards);
+	
 	bool GetStatusTask();
 	FString getDescriptionTask();
 };

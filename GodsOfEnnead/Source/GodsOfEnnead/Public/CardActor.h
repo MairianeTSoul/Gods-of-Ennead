@@ -17,6 +17,13 @@ struct FDataCardStruct : public FTableRowBase
 	int attack;
 	UPROPERTY(EditAnywhere)
 	FString cardName;
+
+	UPROPERTY()
+	ACardActor* AssociatedActor;
+	bool operator==(const FDataCardStruct& Other) const
+	{
+        return hp == Other.hp && attack == Other.attack && cardName == Other.cardName && AssociatedActor == Other.AssociatedActor;
+	}
 };
 
 UCLASS(Blueprintable)

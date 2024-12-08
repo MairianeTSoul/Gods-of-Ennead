@@ -36,6 +36,9 @@ public:
 
 	void StartGame();
 	void PlayRound();
+
+	void ComputerTurn();
+	void DiscardUnnecessaryCard();
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cards")
 	TArray<UHand*> PlayersHands;
