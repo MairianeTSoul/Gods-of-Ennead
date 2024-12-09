@@ -2,6 +2,7 @@
 
 #include "Task.h"
 #include "TaskUserWidget.h"
+#include "GodsOfEnnead/GodsOfEnneadPlayerController.h"
 
 void UHand::AddCard(ACardActor* Card, const FVector& Position)
 {
@@ -51,6 +52,8 @@ void UHand::MoveToHand(ACardActor* CardActor)
 		{
 			Position.CardActor = CardActor;
 			CardActor->SetActorLocation(Position.Position);
+			if (bIsPlayer) CardActor->SetActorRotation(SHOW_ROTATION);
+			else CardActor->SetActorRotation(HIDE_ROTATION);
 			UE_LOG(LogTemp, Log, TEXT("Карта перемещена на свободное место."));
 			return;
 		}
@@ -60,6 +63,8 @@ void UHand::MoveToHand(ACardActor* CardActor)
 	FVector NewPosition = LastCardPos + FVector(0.0f, 500.0f, 0.0f);
 	AddCard(CardActor, NewPosition);
 	CardActor->SetActorLocation(NewPosition);
+	if (bIsPlayer) CardActor->SetActorRotation(SHOW_ROTATION);
+	else CardActor->SetActorRotation(HIDE_ROTATION);
 	UE_LOG(LogTemp, Log, TEXT("Карта добавлена в конец руки. %d"), CardsInHand);
 }
 

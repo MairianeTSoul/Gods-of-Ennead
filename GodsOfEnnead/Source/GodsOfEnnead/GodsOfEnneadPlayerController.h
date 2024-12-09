@@ -13,8 +13,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAnimationFinished);
 
 const uint32 g_cardCount = 108;
 
-const FRotator SHOW_ROTATION = FRotator(90.0f, 19.471221f, -160.528779f);
-const FRotator HIDE_ROTATION = FRotator(-90.0f, 19.471221f, -160.528779f);
+const FRotator SHOW_ROTATION = FRotator(90.0f, 0, 180);
+const FRotator HIDE_ROTATION = FRotator(-90.0f, 0, 0);
 
 
 UCLASS()

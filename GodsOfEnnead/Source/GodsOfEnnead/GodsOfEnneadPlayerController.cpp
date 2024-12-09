@@ -254,12 +254,12 @@ void AGodsOfEnneadPlayerController::DiscardUnnecessaryCard()
             }
         }
     }
-    PlayersHands[0]->RemoveCard(CardToDeck);
     const FVector TargetLocation = ShowDeckCardsActors.Num() > 0
                                        ? ShowDeckCardsActors.Last()->GetActorLocation() + FVector(0.0f, 0.0f, 2.0f)
                                        : FVector(7840.0f, 7680.0f, 565.0f);
     ShowDeckCardsActors.Add(CardToDeck);
-    CardToDeck->SetActorLocation(TargetLocation);
+    PlayersHands[0]->MoveToDeck(CardToDeck, TargetLocation);
+    CardToDeck->SetActorRotation(SHOW_ROTATION);
     
     UE_LOG(LogTemp, Log, TEXT("Компьютер положил карту в открытую колоду: %s"), *CardToDeck->CardsData.cardName);
     
@@ -268,11 +268,11 @@ void AGodsOfEnneadPlayerController::DiscardUnnecessaryCard()
         if (PlayersHands[1]->CheckTask(CurrentTaskController->Task))
         {
             UE_LOG(LogTemp, Log, TEXT("Оба игрока собрали набор."));
+            CurrentTurnStatus = ETurnStatus::Second_Round_Start;
+            return;
         }
-        else
-        {
-            UE_LOG(LogTemp, Log, TEXT("Компьютер выполнил задачу."));
-        }
+
+        UE_LOG(LogTemp, Log, TEXT("Компьютер выполнил задачу."));
     }
     else
     {
@@ -304,7 +304,7 @@ void AGodsOfEnneadPlayerController::DealCards(int32 NumCards, bool bIsPlayer)
         }
         else
         {
-            // Card->SetActorRotation(SHOW_ROTATION); TODO return after setting material on card
+            Card->SetActorRotation(SHOW_ROTATION);
         }
 
         if (Card)
@@ -400,8 +400,7 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
     }
 
     FVector FinalCardLocation(7840.0f, 7680.0f, 563.0f);
-    // FRotator FinalCardRotation = SHOW_ROTATION; TODO return after setting material on card
-    FRotator FinalCardRotation = SHOW_ROTATION; // TODO remove after setting material on card
+    FRotator FinalCardRotation = SHOW_ROTATION;
     FVector FinalCardScale(90.0f, 19.471221f, -160.528779f);
 
     FVector SpawnNewCardLocation;
@@ -415,8 +414,7 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
     else
     {
         SpawnNewCardLocation = StartSpawnLocation + FVector(0.0f, 0.0f, SpawnedActorCount * 2.0f);
-        // SpawnNewCardRotation = HIDE_ROTATION; TODO return after setting material on card
-        SpawnNewCardRotation = FinalCardRotation; // TODO remove after setting material on card
+        SpawnNewCardRotation = HIDE_ROTATION;
     }
 
     FActorSpawnParameters SpawnParams;
@@ -459,6 +457,7 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
 
             WidgetComponent->SetDrawSize(FVector2D(500.0f, 500.0f));
             WidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+            WidgetComponent->SetTwoSided(true);
             WidgetComponent->SetPivot(FVector2D(0.5f, 0.5f));
 
             const TSubclassOf<UUserWidget> WidgetClass = LoadClass<UCardUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Card.WBP_Card_C"));
