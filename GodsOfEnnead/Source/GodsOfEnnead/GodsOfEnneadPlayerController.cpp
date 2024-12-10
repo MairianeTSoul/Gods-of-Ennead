@@ -1,4 +1,6 @@
 #include "GodsOfEnneadPlayerController.h"
+
+#include "AITestsCommon.h"
 #include "EngineUtils.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/Actor.h"
@@ -8,6 +10,7 @@
 #include "Public/CardActor.h"
 #include "Blueprint/UserWidget.h"
 #include "CardUserWidget.h"
+#include "ResultUserWidget.h"
 #include "Task.h"
 #include "GameFramework/Character.h"
 
@@ -24,11 +27,15 @@ AGodsOfEnneadPlayerController::AGodsOfEnneadPlayerController()
     static ConstructorHelpers::FObjectFinder<UDataTable> dataCardsObject(TEXT("DataTable'/Game/DataBase/DT_They.DT_They'"));
     if (dataCardsObject.Succeeded())
     {
-        CardDataTable = dataCardsObject.Object;
+        TObjectPtr<UDataTable> CardDataTable = dataCardsObject.Object;
+        CardDataTable->GetAllRows("", dtRows);
+
     }
+    
 
     // for (int i = 0; i < )
 }
+
 void AGodsOfEnneadPlayerController::BeginPlay()
 {
     Super::BeginPlay();
@@ -128,6 +135,13 @@ void AGodsOfEnneadPlayerController::TakeCard()
                 ShowDeckCardsActors.Add(ClickedCard);
                 bool bCheck = PlayersHands[1]->CheckTask(CurrentTaskController->Task);
                 UE_LOG(LogTemp, Error, TEXT("CheckTask: %hhd"), bCheck);
+                if (bCheck && DeckCardsActors.IsEmpty())
+                {
+                    bIsPlayerWin = true;
+                    AddResultToViewPort();
+                    CurrentTurnStatus = ETurnStatus::Waiting;
+                    return;
+                }
                 CurrentTurnStatus = ETurnStatus::Computer_Turn;
 
                 FTimerHandle DelayTimerHandle;
@@ -273,13 +287,30 @@ void AGodsOfEnneadPlayerController::DiscardUnnecessaryCard()
         }
 
         UE_LOG(LogTemp, Log, TEXT("Компьютер выполнил задачу."));
+        if (DeckCardsActors.IsEmpty())
+        {
+            AddResultToViewPort();
+        }
     }
     else
     {
-        UE_LOG(LogTemp, Log, TEXT("Компьютер завершил ход."));
+        UE_LOG(LogTemp, Log, TEXT("Компьютер завершил ход. %d"), DeckCardsActors.Num());
+        if (DeckCardsActors.IsEmpty())
+        {
+            bIsPlayerWin = PlayersHands[1]->CheckTask(CurrentTaskController->Task);
+            AddResultToViewPort();
+        }
     }
 
-    CurrentTurnStatus = ETurnStatus::Waiting_Choose;    
+    PlayRound();
+}
+
+void AGodsOfEnneadPlayerController::AddResultToViewPort()
+{
+    TSubclassOf<UUserWidget> widgetClass = LoadClass<UResultUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Result.WBP_Result_C"));
+    TObjectPtr<UResultUserWidget> ResultWidget = CreateWidget<UResultUserWidget>(GetWorld(), widgetClass);
+    ResultWidget->SetResultText(bIsPlayerWin);
+    ResultWidget->AddToViewport();
 }
 
 void AGodsOfEnneadPlayerController::DealCards(int32 NumCards, bool bIsPlayer)
@@ -295,7 +326,6 @@ void AGodsOfEnneadPlayerController::DealCards(int32 NumCards, bool bIsPlayer)
     {
         ACardActor* Card = DeckCardsActors.Last();
         DeckCardsActors.Remove(Card);
-        FixDeck(DeckCardsActors);
         FVector TargetLocation = FVector(7280.0f, 5676.0f + i * 500.0f, 563.0f + i * 0.1f);
 
         if (!bIsPlayer)
@@ -441,14 +471,11 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
             SpawnedActor->SetActorLocationAndRotation(SpawnNewCardLocation, SpawnNewCardRotation);
             SpawnedActor->SetActorScale3D(FinalCardScale);
         }
-
-        TArray<FDataCardStruct*> dtRows;
-        CardDataTable->GetAllRows("", dtRows);
-
-        const int rowIndex = SpawnedActorCount % dtRows.Num();
-
-        FDataCardStruct* Item = dtRows[rowIndex];
+        
+        const int RandomIndex = FMath::RandRange(0, dtRows.Num() - 1);
+        FDataCardStruct* Item = dtRows[RandomIndex];
         SpawnedActor->SetDataCard(Item->hp, Item->attack, Item->cardName);
+        dtRows.RemoveAt(RandomIndex);
     
         if (UWidgetComponent* WidgetComponent = NewObject<UWidgetComponent>(SpawnedActor, UWidgetComponent::StaticClass(), TEXT("CardWidget")))
         {

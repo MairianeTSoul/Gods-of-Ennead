@@ -29,20 +29,18 @@ void UTaskController::init(UWorld* World)
 
 void UTaskController::GenerateTask()
 {
-	// const ETaskPattern RandomPattern = static_cast<ETaskPattern>(FMath::RandRange(0, static_cast<int32>(ETaskPattern::NAME)));
-	// const int32 RandomCount = FMath::RandRange(3, 5);
-	// ETaskType RandomType;
-	// if (RandomPattern == ETaskPattern::NAME)
-	// {
-	// 	RandomType = ETaskType::SET;
-	// }
-	// else
-	// {
-	// 	RandomType = static_cast<ETaskType>(FMath::RandRange(0, static_cast<int32>(ETaskType::SET)));
-	// }
-	//
-	// Task = NewObject<UTask>();
-	// Task->InitializeTask(RandomPattern, RandomCount, RandomType);
+	const ETaskPattern RandomPattern = static_cast<ETaskPattern>(FMath::RandRange(0, static_cast<int32>(ETaskPattern::NAME)));
+	const int32 RandomCount = FMath::RandRange(3, 5);
+	ETaskType RandomType;
+	if (RandomPattern == ETaskPattern::NAME)
+	{
+		RandomType = ETaskType::SET;
+	}
+	else
+	{
+		RandomType = static_cast<ETaskType>(FMath::RandRange(0, static_cast<int32>(ETaskType::SET)));
+	}
+	
 	Task = NewObject<UTask>();
-	Task->InitializeTask(ETaskPattern::NAME, 5, ETaskType::SET);
+	Task->InitializeTask(RandomPattern, RandomCount, RandomType);
 }

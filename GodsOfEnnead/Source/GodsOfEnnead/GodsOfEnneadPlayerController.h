@@ -11,7 +11,7 @@
 class ACardActor;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAnimationFinished);
 
-const uint32 g_cardCount = 108;
+const uint32 g_cardCount = 15;
 
 const FRotator SHOW_ROTATION = FRotator(90.0f, 0, 180);
 const FRotator HIDE_ROTATION = FRotator(-90.0f, 0, 0);
@@ -31,7 +31,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void MovePlayerToTarget();
 
-	bool bGameOver = false;
+	bool bIsPlayerWin = false;
+
+	void AddResultToViewPort();
+	
 	ETurnStatus CurrentTurnStatus = ETurnStatus::Waiting;
 
 	void StartGame();
@@ -72,7 +75,7 @@ private:
 	void UpdateMovement(float DeltaTime);
 	void Tick(float DeltaTime);
 
-	TObjectPtr<UDataTable> CardDataTable;
+	TArray<FDataCardStruct*> dtRows;
 
 	UPROPERTY()
 	FVector StartLocation; // Начальная позиция игрока
