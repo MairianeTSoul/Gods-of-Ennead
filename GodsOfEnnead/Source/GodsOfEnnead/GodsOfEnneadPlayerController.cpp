@@ -31,9 +31,6 @@ AGodsOfEnneadPlayerController::AGodsOfEnneadPlayerController()
         CardDataTable->GetAllRows("", dtRows);
 
     }
-    
-
-    // for (int i = 0; i < )
 }
 
 void AGodsOfEnneadPlayerController::BeginPlay()
@@ -142,6 +139,11 @@ void AGodsOfEnneadPlayerController::TakeCard()
                     CurrentTurnStatus = ETurnStatus::Waiting;
                     return;
                 }
+                if (bCheck)
+                {
+                    StartSecondTour();
+                    return;
+                }
                 CurrentTurnStatus = ETurnStatus::Computer_Turn;
 
                 FTimerHandle DelayTimerHandle;
@@ -187,6 +189,49 @@ void AGodsOfEnneadPlayerController::StartGame()
 void AGodsOfEnneadPlayerController::PlayRound()
 {
     CurrentTurnStatus = ETurnStatus::Waiting_Choose;
+}
+
+void AGodsOfEnneadPlayerController::StartSecondTour()
+{
+    CurrentTurnStatus = ETurnStatus::Second_Round_Start;
+    DeckCardsActors.Empty();
+    ShowDeckCardsActors.Empty();
+    
+    for (int32 PlayerIndex = 0; PlayerIndex < 2; ++PlayerIndex)
+    {
+        UHand* PlayerHand = PlayersHands[PlayerIndex];
+
+        TArray<FDataCardStruct> CurrentCards;
+        for (const FCardPosition& Position : PlayerHand->CardPositions)
+        {
+            if (Position.CardActor)
+            {
+                CurrentCards.Add(Position.CardActor->GetDataCard());
+            }
+        }
+
+        const int32 CurrentClosestCount = CurrentTaskController->Task->GetClosestCountToCompletion(CurrentCards);
+        for (const FCardPosition& Position : PlayerHand->CardPositions)
+        {
+            if (Position.CardActor)
+            {
+                ACardActor* CardToTest = Position.CardActor;
+
+                CurrentCards.Remove(CardToTest->GetDataCard());
+                const int32 NewClosestCount = CurrentTaskController->Task->GetClosestCountToCompletion(CurrentCards);
+                UE_LOG(LogTemp, Log, TEXT("близость к победе для карты %s: %d, без карты: %d"), *CardToTest->CardsData.cardName, CurrentClosestCount, NewClosestCount);
+
+                CurrentCards.Add(CardToTest->GetDataCard());
+
+                if (NewClosestCount >= CurrentClosestCount)
+                {
+                    UE_LOG(LogTemp, Log, TEXT("Карта удалена: %s, так как удаление не влияло на задачу"), *CardToTest->CardsData.cardName);
+                    PlayerHand->RemoveCard(CardToTest);
+                    CardToTest->Destroy();
+                }
+            }
+        }
+    }
 }
 
 void AGodsOfEnneadPlayerController::ComputerTurn()
@@ -282,7 +327,7 @@ void AGodsOfEnneadPlayerController::DiscardUnnecessaryCard()
         if (PlayersHands[1]->CheckTask(CurrentTaskController->Task))
         {
             UE_LOG(LogTemp, Log, TEXT("Оба игрока собрали набор."));
-            CurrentTurnStatus = ETurnStatus::Second_Round_Start;
+            StartSecondTour();
             return;
         }
 
