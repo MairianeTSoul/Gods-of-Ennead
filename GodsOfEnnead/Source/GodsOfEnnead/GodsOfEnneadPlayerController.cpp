@@ -64,8 +64,8 @@ void AGodsOfEnneadPlayerController::BeginPlay()
         GetPawn()->SetActorLocation(InitialLocation);
     }
 
-    EndLocation = FVector(7157.0f, 7200.00f, 2380.00f);
-    EndRotation = FRotator(-66.00f, 0.00f, 0.00f);
+    EndLocation = FVector(7467.0f, 7166.00f, 4397.00f);
+    EndRotation = FRotator(-70.00f, 0.00f, 0.00f);
     MoveDuration = 3.0f;
 
     if (const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(GetWorld()); CurrentLevelName == "Game")    
@@ -128,7 +128,7 @@ void AGodsOfEnneadPlayerController::TakeCard()
                
                 UE_LOG(LogTemp, Log, TEXT("Player: Card clicked: %s"), *ClickedCard->CardsData.cardName);
                 PlayersHands[1]->MoveToDeck(ClickedCard, ShowDeckCardsActors.Num() ? ShowDeckCardsActors.Last()->GetActorLocation()
-                                                                                    :  FVector(7840.0f, 7680.0f, 563.0f));
+                                                                                    :  FVector(7840.0f, 7680.0f, 2000.0f));
                 ShowDeckCardsActors.Add(ClickedCard);
                 bool bCheck = PlayersHands[1]->CheckTask(CurrentTaskController->Task);
                 UE_LOG(LogTemp, Error, TEXT("CheckTask: %hhd"), bCheck);
@@ -315,7 +315,7 @@ void AGodsOfEnneadPlayerController::DiscardUnnecessaryCard()
     }
     const FVector TargetLocation = ShowDeckCardsActors.Num() > 0
                                        ? ShowDeckCardsActors.Last()->GetActorLocation() + FVector(0.0f, 0.0f, 2.0f)
-                                       : FVector(7840.0f, 7680.0f, 565.0f);
+                                       : FVector(7840.0f, 7680.0f, 2000.0f);
     ShowDeckCardsActors.Add(CardToDeck);
     PlayersHands[0]->MoveToDeck(CardToDeck, TargetLocation);
     CardToDeck->SetActorRotation(SHOW_ROTATION);
@@ -371,11 +371,11 @@ void AGodsOfEnneadPlayerController::DealCards(int32 NumCards, bool bIsPlayer)
     {
         ACardActor* Card = DeckCardsActors.Last();
         DeckCardsActors.Remove(Card);
-        FVector TargetLocation = FVector(7280.0f, 5676.0f + i * 500.0f, 563.0f + i * 0.1f);
+        FVector TargetLocation = FVector(7280.0f, 5676.0f + i * 500.0f, 2000.0f + i * 0.1f);
 
         if (!bIsPlayer)
         {
-            TargetLocation = FVector(8470.0f, 5676.0f + i * 500.0f, 563.0f + i * 0.1f);
+            TargetLocation = FVector(8470.0f, 5676.0f + i * 500.0f, 2000.0f + i * 0.1f);
         }
         else
         {
@@ -393,7 +393,7 @@ void AGodsOfEnneadPlayerController::DealCards(int32 NumCards, bool bIsPlayer)
 
 void AGodsOfEnneadPlayerController::SpawnActors()
 {
-    FVector SpawnStartLocation(7840.00f, 6755.00f, 563.00f);
+    FVector SpawnStartLocation(7840.00f, 6755.00f, 2000.00f);
     FRotator SpawnStartRotation(90.00f, 90.0f, -90.0f);
 
     SpawnedActorCount = 0;
@@ -474,7 +474,7 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
         return;
     }
 
-    FVector FinalCardLocation(7840.0f, 7680.0f, 563.0f);
+    FVector FinalCardLocation(7840.0f, 7680.0f, 2000.0f);
     FRotator FinalCardRotation = SHOW_ROTATION;
     FVector FinalCardScale(90.0f, 19.471221f, -160.528779f);
 
