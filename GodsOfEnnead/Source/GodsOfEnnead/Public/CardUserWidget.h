@@ -38,5 +38,5 @@ class GODSOFENNEAD_API UCardUserWidget : public UUserWidget
 
 	UFUNCTION(BlueprintCallable, Category = "Stats")
 	FSlateBrush GetNewIconCharacter();
-
+	FString FormatCharacterName(const FString& CharacterName);
 };

@@ -30,7 +30,7 @@ void UHand::RemoveCard(ACardActor* Card)
 					CardPositions[i].CardActor = CardPositions[i + 1].CardActor;
 					if (CardPositions[i].CardActor)
 					{
-						CardPositions[i].CardActor->SetActorLocation(CardPositions[i].Position);
+						CardPositions[i].CardActor->AnimateTo(&CardPositions[i].Position);
 					}
 					CardPositions[i + 1].CardActor = nullptr;
 				}
@@ -40,8 +40,6 @@ void UHand::RemoveCard(ACardActor* Card)
 			UE_LOG(LogTemp, Log, TEXT("Пустая позиция заполнена, последняя ячейка удалена."));
 		}
 	}
-	
-	
 }
 
 void UHand::MoveToHand(ACardActor* CardActor)
@@ -51,27 +49,26 @@ void UHand::MoveToHand(ACardActor* CardActor)
 		if (Position.CardActor == nullptr)
 		{
 			Position.CardActor = CardActor;
-			CardActor->SetActorLocation(Position.Position);
-			if (bIsPlayer) CardActor->SetActorRotation(SHOW_ROTATION);
-			else CardActor->SetActorRotation(HIDE_ROTATION);
+			if (bIsPlayer) CardActor->AnimateTo(&Position.Position, &GShow_Rotation);
+			else CardActor->AnimateTo(&Position.Position, &GHide_Rotation);
 			UE_LOG(LogTemp, Log, TEXT("Карта перемещена на свободное место."));
 			return;
 		}
 	}
 
 	FVector LastCardPos = CardPositions.Last().Position;
-	FVector NewPosition = LastCardPos + FVector(0.0f, 500.0f, 0.0f);
+	FVector NewPosition = LastCardPos + FVector(0.0f, 550.0f, 0.0f);
 	AddCard(CardActor, NewPosition);
-	CardActor->SetActorLocation(NewPosition);
-	if (bIsPlayer) CardActor->SetActorRotation(SHOW_ROTATION);
-	else CardActor->SetActorRotation(HIDE_ROTATION);
+	if (bIsPlayer) CardActor->AnimateTo(&NewPosition, &GShow_Rotation);
+	else CardActor->AnimateTo(&NewPosition, &GHide_Rotation);
 	UE_LOG(LogTemp, Log, TEXT("Карта добавлена в конец руки. %d"), CardsInHand);
 }
 
-void UHand::MoveToDeck(ACardActor* CardActor, const FVector& NewLocation)
+void UHand::MoveToDeck(ACardActor* CardActor, FVector& NewLocation)
 {
 	RemoveCard(CardActor);
-	CardActor->SetActorLocation(NewLocation + FVector(0.0f, 0.0f, 1.0f));
+	NewLocation += FVector(0.0f, 0.0f, 1.0f);
+	CardActor->AnimateTo(&NewLocation, &GShow_Rotation);
 }
 
 bool UHand::CheckTask(UTask* Task)

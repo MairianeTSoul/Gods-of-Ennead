@@ -56,13 +56,32 @@ void ACardActor::BeginPlay()
 	// }
 }
 
-void ACardActor::AnimateTo(const FVector& StartPos, const FVector& FinalPos)
+void ACardActor::AnimateTo(const FVector* FinalPos, const FRotator* FinalRot)
 {
 	bIsAnimating = true;
-	StartPosition = StartPos;
-	TargetPosition = FinalPos;
+
+	StartPosition = GetActorLocation();
+	StartRotation = GetActorRotation();
+	
+	if (FinalPos)
+	{
+		TargetPosition = *FinalPos;
+		bAnimatePosition = true;
+	}
+	else
+	{
+		TargetPosition = StartPosition;
+		bAnimatePosition = false;
+	}
+
+	if (FinalRot && FinalRot->Pitch != StartRotation.Pitch)
+	{
+		SetActorRotation(*FinalRot);
+	}
+
 	ElapsedTime = 0.0f;
 }
+
 
 void ACardActor::Tick(float DeltaTime)
 {
@@ -73,8 +92,17 @@ void ACardActor::Tick(float DeltaTime)
 		ElapsedTime += DeltaTime;
 		const float Alpha = FMath::Clamp(ElapsedTime / AnimationDuration, 0.0f, 1.0f);
 
-		const FVector NewPosition = FMath::Lerp(StartPosition, TargetPosition, Alpha);
-		SetActorLocation(NewPosition);
+		if (bAnimatePosition)
+		{
+			const FVector NewPosition = FMath::Lerp(StartPosition, TargetPosition, Alpha);
+			SetActorLocation(NewPosition);
+		}
+
+		if (bAnimateRotation)
+		{
+			const FRotator NewRotation = FMath::Lerp(StartRotation, TargetRotation, Alpha);
+			SetActorRotation(NewRotation);
+		}
 
 		if (Alpha >= 1.0f)
 		{
@@ -83,6 +111,7 @@ void ACardActor::Tick(float DeltaTime)
 		}
 	}
 }
+
 
 FDataCardStruct ACardActor::GetDataCard()
 {

@@ -11,10 +11,20 @@
 class ACardActor;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAnimationFinished);
 
-const uint32 g_cardCount = 108;
+constexpr uint32 GCardCount = 108;
 
-const FRotator SHOW_ROTATION = FRotator(90.0f, 0, 180);
-const FRotator HIDE_ROTATION = FRotator(-90.0f, 0, 0);
+const FRotator GShow_Rotation = FRotator(90.0f, 0, 180);
+const FRotator GHide_Rotation = FRotator(-90.0f, 0, 0);
+
+const FVector GShow_Location = FVector(7977.0f, 7680.0f, 2000.0f);
+const FVector GHide_Location = FVector(7977.00f, 6755.00f, 2100.00f);
+const FVector GComputer_Card_Location = FVector(8718.0f, 5571.0f, 2000.0f);
+const FVector GPlayer_Card_Location = FVector(7280.0f, 5571.0f, 2100.0f);
+
+const FVector GCard_Scale = FVector(90.0f, 19.471221f, 180.528779f);
+
+const FVector GCamera_Position = FVector(7941.0f, 7166.00f, 3754.00f);
+const FRotator GCamera_Rotation = FRotator(-85.0f, 0.0f, 0.0f);
 
 
 UCLASS()

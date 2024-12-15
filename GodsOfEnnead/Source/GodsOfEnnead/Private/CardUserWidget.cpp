@@ -21,7 +21,32 @@ FString UCardUserWidget::GetNewNameCharacter()
 
 FSlateBrush UCardUserWidget::GetNewIconCharacter()
 {
-    return new_icon_character;
+    FSlateBrush Brush;
+
+    FString FormattedName = FormatCharacterName(new_name_character);
+
+    FString PathToTexture = FString::Printf(TEXT("/Game/Assets/UI/Cards/characters/%s.%s"),
+                                           *FormattedName, *FormattedName);
+
+    UTexture2D* Texture = LoadObject<UTexture2D>(nullptr, *PathToTexture);
+    if (Texture)
+    {
+        Brush.SetResourceObject(Texture);
+        Brush.ImageSize = FVector2D(256.0f, 256.0f); // Размер иконки
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Не удалось загрузить текстуру для персонажа: %s"), *(new_name_character.ToLower()));
+    }
+
+    return Brush;
+    // D:/Gods-of-Ennead/GodsOfEnnead/Content/Assets/UI/Cards/characters/bastet.uasset
 }
 
+FString UCardUserWidget::FormatCharacterName(const FString& CharacterName)
+{
+    FString FormattedName = CharacterName.ToLower();
+    FormattedName.ReplaceInline(TEXT(" "), TEXT("_"));
+    return FormattedName;
+}
 

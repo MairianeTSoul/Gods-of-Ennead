@@ -50,13 +50,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "InteractiveObjectsActor")
 	void SetDataCard(int hp, int attack, FString cardName);
 
-	void AnimateTo(const FVector& StartPos, const FVector& FinalPos);
+	void AnimateTo(const FVector* FinalPos = nullptr, const FRotator* FinalRot = nullptr);
 	virtual void Tick(float DeltaTime) override;
 
 private:
 	bool bIsAnimating = false;
+	bool bAnimatePosition = false;
+	bool bAnimateRotation = false;
+	
 	FVector StartPosition;
 	FVector TargetPosition;
+	FRotator StartRotation;
+	FRotator TargetRotation;
 	float ElapsedTime;
 	const float AnimationDuration = 1.0f;
 

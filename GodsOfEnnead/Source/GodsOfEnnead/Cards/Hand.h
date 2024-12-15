@@ -24,7 +24,7 @@ public:
 	void AddCard(ACardActor* Card, const FVector& Position);
 	void RemoveCard(ACardActor* Card);
 	void MoveToHand(ACardActor* CardActor);
-	void MoveToDeck(ACardActor* CardActor, const FVector& NewLocation);
+	void MoveToDeck(ACardActor* CardActor, FVector& NewLocation);
 
 	UFUNCTION(BlueprintCallable, Category = "Hand")
 	bool CheckTask(UTask* Task);

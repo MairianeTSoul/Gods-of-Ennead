@@ -19,8 +19,8 @@ AGodsOfEnneadPlayerController::AGodsOfEnneadPlayerController()
     static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClass(TEXT("/Game/BP/BP_Character.BP_Character"));
     if (PlayerPawnClass.Succeeded())
     {
-        FVector ddSpawnLocation = FVector(0.0f, 0.0f, 300.0f); // Задайте начальную позицию
-        FRotator ddSpawnRotation = FRotator(0.0f, 0.0f, 0.0f); // Задайте начальное вращение
+        FVector ddSpawnLocation = FVector(0.0f, 0.0f, 300.0f);
+        FRotator ddSpawnRotation = FRotator(0.0f, 0.0f, 0.0f);
         GetWorld()->SpawnActor<ACharacter>(PlayerPawnClass.Class, ddSpawnLocation, ddSpawnRotation);
     };
 
@@ -64,8 +64,8 @@ void AGodsOfEnneadPlayerController::BeginPlay()
         GetPawn()->SetActorLocation(InitialLocation);
     }
 
-    EndLocation = FVector(7467.0f, 7166.00f, 4397.00f);
-    EndRotation = FRotator(-70.00f, 0.00f, 0.00f);
+    EndLocation = GCamera_Position;
+    EndRotation = GCamera_Rotation;
     MoveDuration = 3.0f;
 
     if (const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(GetWorld()); CurrentLevelName == "Game")    
@@ -127,8 +127,9 @@ void AGodsOfEnneadPlayerController::TakeCard()
                 if (!bCardFound) return;
                
                 UE_LOG(LogTemp, Log, TEXT("Player: Card clicked: %s"), *ClickedCard->CardsData.cardName);
-                PlayersHands[1]->MoveToDeck(ClickedCard, ShowDeckCardsActors.Num() ? ShowDeckCardsActors.Last()->GetActorLocation()
-                                                                                    :  FVector(7840.0f, 7680.0f, 2000.0f));
+                FVector TargetLocation = ShowDeckCardsActors.Num() ? ShowDeckCardsActors.Last()->GetActorLocation()
+                                                    : GShow_Location;
+                PlayersHands[1]->MoveToDeck(ClickedCard, TargetLocation);
                 ShowDeckCardsActors.Add(ClickedCard);
                 bool bCheck = PlayersHands[1]->CheckTask(CurrentTaskController->Task);
                 UE_LOG(LogTemp, Error, TEXT("CheckTask: %hhd"), bCheck);
@@ -313,12 +314,11 @@ void AGodsOfEnneadPlayerController::DiscardUnnecessaryCard()
             }
         }
     }
-    const FVector TargetLocation = ShowDeckCardsActors.Num() > 0
+    FVector TargetLocation = ShowDeckCardsActors.Num() > 0
                                        ? ShowDeckCardsActors.Last()->GetActorLocation() + FVector(0.0f, 0.0f, 2.0f)
-                                       : FVector(7840.0f, 7680.0f, 2000.0f);
+                                       : GShow_Location;
     ShowDeckCardsActors.Add(CardToDeck);
     PlayersHands[0]->MoveToDeck(CardToDeck, TargetLocation);
-    CardToDeck->SetActorRotation(SHOW_ROTATION);
     
     UE_LOG(LogTemp, Log, TEXT("Компьютер положил карту в открытую колоду: %s"), *CardToDeck->CardsData.cardName);
     
@@ -361,40 +361,54 @@ void AGodsOfEnneadPlayerController::AddResultToViewPort()
 void AGodsOfEnneadPlayerController::DealCards(int32 NumCards, bool bIsPlayer)
 {
     int PlayerIndex = bIsPlayer ? 1 : 0;
+
     if (PlayersHands.IsEmpty() || !PlayersHands.IsValidIndex(PlayerIndex))
     {
         PlayersHands.Add(NewObject<UHand>());
         PlayersHands[PlayerIndex]->bIsPlayer = bIsPlayer;
     }
-    
+
     for (int32 i = 0; i < NumCards; ++i)
     {
-        ACardActor* Card = DeckCardsActors.Last();
-        DeckCardsActors.Remove(Card);
-        FVector TargetLocation = FVector(7280.0f, 5676.0f + i * 500.0f, 2000.0f + i * 0.1f);
+        FTimerHandle TimerHandle;
+        FTimerDelegate TimerDelegate;
 
-        if (!bIsPlayer)
+        TimerDelegate.BindLambda([this, i, PlayerIndex, bIsPlayer]()
         {
-            TargetLocation = FVector(8470.0f, 5676.0f + i * 500.0f, 2000.0f + i * 0.1f);
-        }
-        else
-        {
-            Card->SetActorRotation(SHOW_ROTATION);
-        }
+            if (DeckCardsActors.Num() == 0)
+            {
+                return;
+            }
 
-        if (Card)
-        {
-            PlayersHands[PlayerIndex]->AddCard(Card, TargetLocation);
+            ACardActor* Card = DeckCardsActors.Last();
+            DeckCardsActors.Remove(Card);
 
-            Card->AnimateTo(Card->GetActorLocation(), TargetLocation);
-        }
+            FVector TargetLocation = GPlayer_Card_Location + FVector(0, i * 550.0f, i * 0.1f);
+            if (!bIsPlayer)
+            {
+                TargetLocation = GComputer_Card_Location + FVector(0, i * 550.0f, i * 0.1f);
+            }
+            else
+            {
+                Card->SetActorRotation(GShow_Rotation);
+            }
+
+            if (Card)
+            {
+                PlayersHands[PlayerIndex]->AddCard(Card, TargetLocation);
+                Card->AnimateTo(&TargetLocation);
+            }
+        });
+
+        GetWorldTimerManager().SetTimer(TimerHandle, TimerDelegate, 1.5f * (i + 1), false);
     }
 }
 
+
 void AGodsOfEnneadPlayerController::SpawnActors()
 {
-    FVector SpawnStartLocation(7840.00f, 6755.00f, 2000.00f);
-    FRotator SpawnStartRotation(90.00f, 90.0f, -90.0f);
+    FVector SpawnStartLocation = GHide_Location;
+    FRotator SpawnStartRotation = GHide_Rotation;
 
     SpawnedActorCount = 0;
     GetWorld()->GetTimerManager().SetTimer(SpawnTimerHandle, [this, SpawnStartLocation, SpawnStartRotation]()
@@ -465,40 +479,35 @@ void AGodsOfEnneadPlayerController::FixDeck(TArray<ACardActor*> Deck)
 
 void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLocation, const FRotator& StartSpawnRotation)
 {
-    if (SpawnedActorCount >= g_cardCount)
+    if (SpawnedActorCount >= GCardCount)
     {
         GetWorld()->GetTimerManager().ClearTimer(SpawnTimerHandle);
-        UE_LOG(LogTemp, Warning, TEXT("All actors spawned. Total: %d"), g_cardCount);
+        UE_LOG(LogTemp, Warning, TEXT("All actors spawned. Total: %d"), GCardCount);
         DisplayTask();
         StartGame();
         return;
     }
-
-    FVector FinalCardLocation(7840.0f, 7680.0f, 2000.0f);
-    FRotator FinalCardRotation = SHOW_ROTATION;
-    FVector FinalCardScale(90.0f, 19.471221f, -160.528779f);
-
+    
     FVector SpawnNewCardLocation;
     FRotator SpawnNewCardRotation;
 
-    if (SpawnedActorCount == g_cardCount - 1)
+    if (SpawnedActorCount == GCardCount - 1)
     {
-        SpawnNewCardLocation = FinalCardLocation;
-        SpawnNewCardRotation = FinalCardRotation;
+        SpawnNewCardLocation = GShow_Location;
+        SpawnNewCardRotation = GShow_Rotation;
     }
     else
     {
         SpawnNewCardLocation = StartSpawnLocation + FVector(0.0f, 0.0f, SpawnedActorCount * 2.0f);
-        SpawnNewCardRotation = HIDE_ROTATION;
+        SpawnNewCardRotation = GHide_Rotation;
     }
 
     FActorSpawnParameters SpawnParams;
     SpawnParams.Owner = this;
 
     if (ACardActor* SpawnedActor = GetWorld()->SpawnActor<ACardActor>(ACardActor::StaticClass(), SpawnNewCardLocation, SpawnNewCardRotation, SpawnParams))
-    {
-        
-        if (SpawnedActorCount == g_cardCount - 1)
+    {        
+        if (SpawnedActorCount == GCardCount - 1)
         {
             ShowDeckCardsActors.Add(SpawnedActor);
         }
@@ -514,7 +523,7 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
             DefaultRoot->RegisterComponent();
 
             SpawnedActor->SetActorLocationAndRotation(SpawnNewCardLocation, SpawnNewCardRotation);
-            SpawnedActor->SetActorScale3D(FinalCardScale);
+            SpawnedActor->SetActorScale3D(GCard_Scale);
         }
         
         const int RandomIndex = FMath::RandRange(0, dtRows.Num() - 1);
