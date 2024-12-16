@@ -99,12 +99,12 @@ void AGodsOfEnneadPlayerController::TakeCard()
                 if (DeckCardsActors.Contains(ClickedCard))
                 {
                     DeckCardsActors.Remove(ClickedCard);
-                    FixDeck(DeckCardsActors);
+                    // FixDeck(DeckCardsActors);
                 }
                 else
                 {
                     ShowDeckCardsActors.Remove(ClickedCard);
-                    FixDeck(ShowDeckCardsActors);
+                    // FixDeck(ShowDeckCardsActors);
                 }
                 PlayersHands[1]->CheckTask(CurrentTaskController->Task);
                 CurrentTurnStatus = ETurnStatus::Player_Turn;
@@ -261,14 +261,14 @@ void AGodsOfEnneadPlayerController::ComputerTurn()
         PlayersHands[0]->MoveToHand(ShowDeckTopCard);
         ShowDeckCardsActors.Remove(ShowDeckTopCard);
         UE_LOG(LogTemp, Log, TEXT("Компьютер взял карту из открытой колоды: %s"), *ShowDeckTopCard->CardsData.cardName);
-        FixDeck(ShowDeckCardsActors);
+        // FixDeck(ShowDeckCardsActors);
     }
     else
     {
         PlayersHands[0]->MoveToHand(DeckTopCard);
         DeckCardsActors.Remove(DeckTopCard);
         UE_LOG(LogTemp, Log, TEXT("Компьютер взял карту из закрытой колоды: %s"), *DeckTopCard->CardsData.cardName);
-        FixDeck(DeckCardsActors);
+        // FixDeck(DeckCardsActors);
     }
 
     FTimerHandle DelayTimerHandle;
@@ -546,24 +546,44 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
             {
                 WidgetComponent->SetWidgetClass(WidgetClass);
                 WidgetComponent->SetVisibility(true);
-                WidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+                // WidgetComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
 
-                auto* cardWidget = (UCardUserWidget*)(WidgetComponent->GetWidget());
+                auto* CardWidget = static_cast<UCardUserWidget*>(WidgetComponent->GetWidget());
                 const FDataCardStruct& dataCard = SpawnedActor->GetDataCard();
-                cardWidget->new_attack = dataCard.attack;
-                cardWidget->new_hp = dataCard.hp;
-                cardWidget->new_name_character = dataCard.cardName;
-
-                //TODO Set image here
-                //cardWidget->new_icon_character.SetResourceObject()
+                CardWidget->new_attack = dataCard.attack;
+                CardWidget->new_hp = dataCard.hp;
+                CardWidget->new_name_character = dataCard.cardName;
             }
             else
             {
                 UE_LOG(LogTemp, Error, TEXT("Failed to load widget class."));
             }
-        }
 
-        // UE_LOG(LogTemp, Warning, TEXT("Actor %d spawned at location: %s"), SpawnedActorCount, *SpawnNewCardLocation.ToString());
+            if (UWidgetComponent* BackWidgetComponent = NewObject<UWidgetComponent>(SpawnedActor, UWidgetComponent::StaticClass(), TEXT("CardBackWidget")))
+            {
+                BackWidgetComponent->AttachToComponent(SpawnedActor->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+                BackWidgetComponent->RegisterComponent();
+
+                BackWidgetComponent->SetDrawSize(FVector2D(500.0f, 500.0f));
+                BackWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+                BackWidgetComponent->SetTwoSided(true);
+                BackWidgetComponent->SetPivot(FVector2D(0.5f, 0.5f));
+
+
+                const TSubclassOf<UUserWidget> BackWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Card_Back.WBP_Card_Back_C"));
+                if (BackWidgetClass)
+                {
+                    BackWidgetComponent->SetRelativeLocation(FVector(-1.0f, 0.0f, 0.0f));
+                    BackWidgetComponent->SetRelativeRotation(FRotator(0.0f, 180.0f, 0.0f));
+                    BackWidgetComponent->SetWidgetClass(BackWidgetClass);
+                    BackWidgetComponent->SetVisibility(true);
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Error, TEXT("Failed to load back widget class."));
+                }
+            }
+        }
     }
 
     ++SpawnedActorCount;
