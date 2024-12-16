@@ -16,10 +16,10 @@ constexpr uint32 GCardCount = 108;
 const FRotator GShow_Rotation = FRotator(90.0f, 0, 180);
 const FRotator GHide_Rotation = FRotator(-90.0f, 0, 0);
 
-const FVector GShow_Location = FVector(7977.0f, 7680.0f, 2000.0f);
-const FVector GHide_Location = FVector(7977.00f, 6755.00f, 2100.00f);
-const FVector GComputer_Card_Location = FVector(8718.0f, 5571.0f, 2000.0f);
-const FVector GPlayer_Card_Location = FVector(7280.0f, 5571.0f, 2100.0f);
+const FVector GShow_Location = FVector(7977.0f, 7680.0f, 2200.0f);
+const FVector GHide_Location = FVector(7977.00f, 6755.00f, 2000.00f);
+const FVector GComputer_Card_Location = FVector(8718.0f, 5571.0f, 2216.0f);
+const FVector GPlayer_Card_Location = FVector(7300.0f, 5571.0f, 2216.0f);
 
 const FVector GCard_Scale = FVector(90.0f, 19.471221f, 180.528779f);
 

@@ -47,6 +47,7 @@ FString UCardUserWidget::FormatCharacterName(const FString& CharacterName)
 {
     FString FormattedName = CharacterName.ToLower();
     FormattedName.ReplaceInline(TEXT(" "), TEXT("_"));
+    FormattedName.ReplaceInline(TEXT("'"), TEXT("_"));
     return FormattedName;
 }
 
