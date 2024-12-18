@@ -10,6 +10,7 @@
 #include "Public/CardActor.h"
 #include "Blueprint/UserWidget.h"
 #include "CardUserWidget.h"
+#include "DiceActor.h"
 #include "ResultUserWidget.h"
 #include "Task.h"
 #include "GameFramework/Character.h"
@@ -165,7 +166,24 @@ void AGodsOfEnneadPlayerController::TakeCard()
                 SelectCard(ClickedCard);
             }
         }
+
+        if (ADiceActor* ClickedDice = Cast<ADiceActor>(HitResult.GetActor()))
+        {
+            if (CurrentTurnStatus == ETurnStatus::Second_Round_Dice)
+            {
+                ClickedDice->RollDice();
+                CurrentTurnStatus = ETurnStatus::Second_Round_Waiting;
+                DiceActor->OnDiceStop.AddDynamic(this, &AGodsOfEnneadPlayerController::OnDiceStopped);
+            }
+        }
     }
+}
+
+void AGodsOfEnneadPlayerController::OnDiceStopped()
+{
+    DiceActor->OnDiceStop.Clear();
+    CurrentTaskController->TaskWidget->DiceResult = DiceActor->DiceResult;
+    ProcessAttack(GetWorld(), PlayersHands[1], PlayersHands[0], CurrentAttackerIndex, true, DiceActor->DiceResult);
 }
 
 void AGodsOfEnneadPlayerController::MovePlayerToTarget()
@@ -251,7 +269,7 @@ void AGodsOfEnneadPlayerController::StartSecondTour()
             }
         }
         
-        PlayerHand->RearrangeCards(std::min(PlayersHands[0]->CardsInHand, PlayersHands[1]->CardsInHand));
+        PlayerHand->RearrangeCards(CurrentTaskController->Task->Count);
         CurrentTurnStatus = ETurnStatus::Second_Round_Player;
         CurrentTaskController->TaskWidget->bVisibility = true;
     }
@@ -495,6 +513,8 @@ void AGodsOfEnneadPlayerController::OnReadyButtonClicked()
 {
     float Delay = 0.5f;
     int TotalAnimations = 0;
+    UE_LOG(LogTemp, Error, TEXT("OnReadyButtonClicked"));
+    
     CurrentTurnStatus = ETurnStatus::Second_Round_Waiting;
 
     for (int i = 0; i < 2; i++)
@@ -544,88 +564,54 @@ void AGodsOfEnneadPlayerController::OnReadyButtonClicked()
         }
     }
 
-    GetWorldTimerManager().SetTimerForNextTick(
-    [this, TotalAnimations]()
+    const FVector SpawnDiceLocation = FVector(8177.0f, 8280.0f, 4000.0f);
+    const FRotator SpawnDiceRotation = FRotator::ZeroRotator;
+
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.Owner = this;
+
+    DiceActor = GetWorld()->SpawnActor<ADiceActor>(ADiceActor::StaticClass(), SpawnDiceLocation, SpawnDiceRotation, SpawnParams);
+    if (DiceActor)
     {
-        FTimerHandle DelayHandle;
-        GetWorldTimerManager().SetTimer(
-            DelayHandle,
-            FTimerDelegate::CreateLambda([this]()
-            {
-                StartAttacks();
-            }),
-            TotalAnimations / 2 + 2.0f,
-            false
-        );
-    });
-}
+        DiceActor->DropDice();
+    }
 
-void AGodsOfEnneadPlayerController::StartAttacks()
-{
-    const UWorld* World = GetWorld();
-    if (!World) return;
-
+    CurrentAttackerIndex = 0;
     PlayersHands[0]->AliveCards = PlayersHands[0]->FirstRow.Num();
     PlayersHands[1]->AliveCards = PlayersHands[1]->FirstRow.Num();
     
-    ScheduleRoundAttack();
+    CurrentTurnStatus = ETurnStatus::Second_Round_Dice;
 }
 
-void AGodsOfEnneadPlayerController::ScheduleRoundAttack()
+void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* AttackerHand, UHand* DefenderHand, int32 Index, bool bIsPlayerAttacker, EDiceResult DiceResult)
 {
-    const UWorld* World = GetWorld();
-    if (!World) return;
-
-    static int32 Delay = 0;
-
-    ScheduleAttacks(World, PlayersHands[1], PlayersHands[0], Delay, true);
-
-    ScheduleAttacks(World, PlayersHands[0], PlayersHands[1], Delay, false);
-
-    FTimerHandle NextRoundHandle;
-    World->GetTimerManager().SetTimer(
-        NextRoundHandle,
-        FTimerDelegate::CreateLambda([this]()
-        {
-            if (PlayersHands[0]->AliveCards > 0 && PlayersHands[1]->AliveCards > 0)
-            {
-                 ScheduleRoundAttack();
-            }
-        }),
-        Delay * 1.4 + 1.7f, false
-    );
-    Delay = 0;
-}
-
-void AGodsOfEnneadPlayerController::ScheduleAttacks(const UWorld* World, UHand* AttackerHand, UHand* DefenderHand, int32& Delay, bool bIsPlayerAttacker)
-{
-    for (int32 i = 0; i < AttackerHand->FirstRow.Num(); i++)
+    if (!AttackerHand->FirstRow[Index]->bIsAlive || !DefenderHand->FirstRow[Index]->bIsAlive || bIsGameOver)
     {
-        if (AttackerHand->FirstRow[i] && DefenderHand->FirstRow[i])
+        if (bIsPlayerAttacker)
         {
-            if (AttackerHand->FirstRow[i]->bIsAlive && DefenderHand->FirstRow[i]->bIsAlive)
-            {
-                Delay++;
-                FTimerHandle AttackTimerHandle;
+            FTimerHandle AttackTimerHandle;
 
-                World->GetTimerManager().SetTimer(
-                    AttackTimerHandle,
-                    FTimerDelegate::CreateLambda([this, World, AttackerHand, DefenderHand, i, bIsPlayerAttacker]()
-                    {
-                        ProcessAttack(World, AttackerHand, DefenderHand, i, bIsPlayerAttacker);
-                    }),
-                    Delay * 2, false
-                );
-            }
+            World->GetTimerManager().SetTimer(
+                AttackTimerHandle,
+                FTimerDelegate::CreateLambda([this]()
+                {
+                    DiceActor->RollDice();
+                    DiceActor->OnDiceStop.AddDynamic(this, &AGodsOfEnneadPlayerController::OnDiceComputerStopped);
+                }),
+                0.5, false
+            );
         }
-    }
-}
+        else
+        {
+            CurrentTurnStatus = ETurnStatus::Second_Round_Dice;
+            CurrentAttackerIndex++;
+            if (CurrentAttackerIndex >= PlayersHands[0]->FirstRow.Num())
+                CurrentAttackerIndex = 0;
+        }
+        return;
+    };
 
-void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* AttackerHand, UHand* DefenderHand, int32 Index, bool bIsPlayerAttacker)
-{
-    if (!AttackerHand->FirstRow[Index] || !DefenderHand->FirstRow[Index] || bIsGameOver) return;
-
-    AttackerHand->FirstRow[Index]->Attack(DefenderHand->FirstRow[Index]);
+    AttackerHand->FirstRow[Index]->Attack(DefenderHand->FirstRow[Index], DiceResult);
 
     if (!DefenderHand->FirstRow[Index]->bIsAlive)
     {
@@ -637,7 +623,7 @@ void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* At
                 SwapCardTimerHandle,
                 FTimerDelegate::CreateLambda([this, DefenderHand, Index]()
                 {
-                    FVector NewPos = DefenderHand->FirstRow[Index]->GetActorLocation();
+                    const FVector NewPos = DefenderHand->FirstRow[Index]->GetActorLocation();
                     DefenderHand->SecondRow[Index]->AnimateTo(&NewPos);
                     DefenderHand->FirstRow[Index] = DefenderHand->SecondRow[Index];
                     DefenderHand->SecondRow[Index] = nullptr;
@@ -667,8 +653,76 @@ void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* At
         );
 
     }
+
+    int Pairs = 0;
+    for (int i = 0; i < AttackerHand->FirstRow.Num(); i++)
+    {
+        if (AttackerHand->FirstRow[i]->bIsAlive && DefenderHand->FirstRow[i]->bIsAlive)
+            Pairs++;
+    }
+    
+    if (Pairs == 0)
+    {
+        if (AttackerHand->AliveCards == DefenderHand->AliveCards)
+        {
+            for (int32 i = 0; i < AttackerHand->FirstRow.Num(); ++i)
+            {
+                if (AttackerHand->FirstRow[i]->bIsAlive)
+                {
+                    for (int32 j = 0; j < DefenderHand->FirstRow.Num(); ++j)
+                    {
+                        if (!DefenderHand->FirstRow[j]->bIsAlive)
+                        {
+                            FVector DeadCardPosition = DefenderHand->FirstRow[j]->GetActorLocation();
+                            DeadCardPosition.Z = AttackerHand->FirstRow[i]->GetActorLocation().Z;
+
+                            AttackerHand->FirstRow[i]->AnimateTo(&DeadCardPosition);
+
+                            DefenderHand->FirstRow[j] = AttackerHand->FirstRow[i];
+                            AttackerHand->FirstRow[i] = nullptr;
+
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            bIsPlayerWin = bIsPlayerAttacker;
+            bIsGameOver = true;
+            AddResultToViewPort();
+        }
+    }
+
+    if (!bIsPlayerAttacker)
+    {
+        CurrentTurnStatus = ETurnStatus::Second_Round_Dice;
+        CurrentAttackerIndex++;
+        if (CurrentAttackerIndex >= PlayersHands[0]->FirstRow.Num())
+            CurrentAttackerIndex = 0;
+    }
+    else
+    {
+        FTimerHandle AttackTimerHandle;
+
+        World->GetTimerManager().SetTimer(
+            AttackTimerHandle,
+            FTimerDelegate::CreateLambda([this]()
+            {
+                DiceActor->RollDice();
+                DiceActor->OnDiceStop.AddDynamic(this, &AGodsOfEnneadPlayerController::OnDiceComputerStopped);
+            }),
+            1.4, false
+        );
+    }
 }
 
+void AGodsOfEnneadPlayerController::OnDiceComputerStopped()
+{
+    DiceActor->OnDiceStop.Clear();
+    CurrentTaskController->TaskWidget->DiceResult = DiceActor->DiceResult;
+    ProcessAttack(GetWorld(), PlayersHands[0], PlayersHands[1], CurrentAttackerIndex, false, DiceActor->DiceResult);
+}
 
 void AGodsOfEnneadPlayerController::AddResultToViewPort()
 {

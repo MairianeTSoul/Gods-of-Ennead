@@ -1,6 +1,7 @@
 ﻿#include "CardActor.h"
 
 #include "CardUserWidget.h"
+#include "DiceActor.h"
 #include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Engine/Engine.h"
@@ -94,9 +95,9 @@ void ACardActor::Tick(float DeltaTime)
 	{
 		if (UCardUserWidget* CardWidget = Cast<UCardUserWidget>(WidgetComponent->GetWidget()))
 		{
-			if (CardWidget->new_hp <= 0)
+			FVector DownPosition = GetActorLocation();
+			if (CardWidget->new_hp <= 0 && DownPosition.Z > 1800)
 			{
-				FVector DownPosition = GetActorLocation();
 				DownPosition.Z -= 200.0f;
 				AnimateTo(&DownPosition);
 			}
@@ -142,15 +143,19 @@ void ACardActor::SetDataCard(int hp, int attack, FString cardName)
 	CardsData.AssociatedActor = this;
 }
 
-void ACardActor::Attack(ACardActor* OpponentCard)
+void ACardActor::Attack(ACardActor* OpponentCard, EDiceResult DiceResult)
 {
 	if (OpponentCard)
 	{
 		FVector StartCardPosition = GetActorLocation();
 		FVector OpponentCardLocation = OpponentCard->GetActorLocation();
 		OpponentCardLocation.Z += 1.0f;
+		
+		int Damage = GetDataCard().attack;
+		if (DiceResult == EDiceResult::Black) return;
+		if (DiceResult == EDiceResult::Grey) Damage /= 2;
+		
 		AnimateTo(&OpponentCardLocation);
-		const int Damage = GetDataCard().attack;
 		OpponentCard->GetDataCard().hp -= Damage;
 
 		if (OpponentCard->GetDataCard().hp <= 0)

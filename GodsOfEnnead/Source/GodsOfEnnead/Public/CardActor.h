@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "DiceActor.h"
 #include "GameFramework/Actor.h"
 #include "CardActor.generated.h"
 
@@ -49,7 +50,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "InteractiveObjectsActor")
 	void SetDataCard(int hp, int attack, FString cardName);
-	void Attack(ACardActor* OpponentCard);
+	void Attack(ACardActor* OpponentCard, EDiceResult DiceResult);
 
 	void AnimateTo(const FVector* FinalPos = nullptr, const FRotator* FinalRot = nullptr);
 	virtual void Tick(float DeltaTime) override;

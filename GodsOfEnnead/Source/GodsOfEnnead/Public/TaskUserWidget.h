@@ -115,6 +115,10 @@ class GODSOFENNEAD_API UTaskUserWidget : public UUserWidget
 	UFUNCTION(BlueprintCallable, Category = "Task")
 	bool setButtonVisibility();
 
+	UFUNCTION(BlueprintCallable, Category = "Task")
+	FText GetDiceResult();
+	EDiceResult DiceResult = EDiceResult::None;
+	
 	UFUNCTION()
 	void setTask(UTask* NewTask);
 	

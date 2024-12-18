@@ -12,5 +12,6 @@ enum class ETurnStatus : uint8
 	Second_Round_Start		UMETA(DisplayName = "Second Round Start"),
 	Second_Round_Player		UMETA(DisplayName = "Second Round Player Turn") ,
 	Second_Round_Waiting	UMETA(DisplayName = "Second Round Waiting") ,
+	Second_Round_Dice		UMETA(DisplayName = "Second Round Dice Waiting") ,
 };
 

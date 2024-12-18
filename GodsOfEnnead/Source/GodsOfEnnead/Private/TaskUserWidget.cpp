@@ -128,3 +128,14 @@ bool UTaskUserWidget::setButtonVisibility()
 {
 	return bVisibility;
 }
+
+FText UTaskUserWidget::GetDiceResult()
+{
+	if (DiceResult == EDiceResult::White)
+		return FText::FromString(UTF8TEXT("Белый: Атака в полную силу"));
+	if (DiceResult == EDiceResult::Grey)
+		return FText::FromString(UTF8TEXT("Серый: Атака в половину силы"));
+	if (DiceResult == EDiceResult::Black)
+		return FText::FromString(UTF8TEXT("Черный: Атака не прошла"));
+	return FText::FromString("");
+}

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "DiceActor.h"
 #include "TaskController.h"
 #include "TurnStatus.h"
 #include "GameFramework/PlayerController.h"
@@ -38,13 +39,19 @@ public:
 	virtual void BeginPlay() override;
 
 	void TakeCard();
+	UFUNCTION()
+	void OnDiceStopped();
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void MovePlayerToTarget();
 
 	bool bIsPlayerWin = false;
 	bool bIsGameOver = false;
+	int CurrentAttackerIndex;
 
-	void ProcessAttack(const UWorld* World, UHand* AttackerHand, UHand* DefenderHand, int32 Index, bool bIsPlayerAttacker);
+	void ProcessAttack(const UWorld* World, UHand* AttackerHand, UHand* DefenderHand, int32 Index, bool bIsPlayerAttacker, EDiceResult
+	                   DiceResult);
+	UFUNCTION()
+	void OnDiceComputerStopped();
 	void AddResultToViewPort();
 	
 	ETurnStatus CurrentTurnStatus = ETurnStatus::Waiting;
@@ -60,15 +67,14 @@ public:
 	
 	UPROPERTY()
 	ACardActor* SelectedCard;
+	
+	UPROPERTY()
+	ADiceActor* DiceActor;
 
 	void SelectCard(ACardActor* Card);
 
 	void SwapCards(ACardActor* Card1, ACardActor* Card2);
 	void OnReadyButtonClicked();
-	void StartAttacks();
-	void ScheduleRoundAttack();
-	void ScheduleAttacks(const UWorld* World, UHand* AttackerHand, UHand* DefenderHand, int32& Delay,
-	                     bool bIsPlayerAttacker);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cards")
 	TArray<UHand*> PlayersHands;
