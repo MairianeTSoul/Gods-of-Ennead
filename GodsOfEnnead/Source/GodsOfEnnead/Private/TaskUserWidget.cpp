@@ -108,6 +108,17 @@ bool UTaskUserWidget::getStatusTask()
 	return Task->GetStatusTask();
 }
 
+bool UTaskUserWidget::getComputerStatusTask()
+{
+		if (!Task)
+    	{
+    		return false;
+    	}
+    	
+    	return Task->GetComputerStatusTask();
+}
+
+
 void UTaskUserWidget::setTask(UTask* NewTask)
 {
 	Task = NewTask;

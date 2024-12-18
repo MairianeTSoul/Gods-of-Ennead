@@ -109,6 +109,8 @@ class GODSOFENNEAD_API UTaskUserWidget : public UUserWidget
 
 	UFUNCTION(BlueprintCallable, Category = "Task")
 	bool getStatusTask();
+	UFUNCTION(BlueprintCallable, Category = "Task")
+	bool getComputerStatusTask();
 
 	UFUNCTION(BlueprintCallable, Category = "Task")
 	bool setButtonVisibility();

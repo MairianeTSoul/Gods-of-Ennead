@@ -44,7 +44,7 @@ public:
 	bool bIsPlayerWin = false;
 	bool bIsGameOver = false;
 
-	void ProcessAttack(UHand* AttackerHand, UHand* DefenderHand, int32 Index, bool bIsPlayerAttacker);
+	void ProcessAttack(const UWorld* World, UHand* AttackerHand, UHand* DefenderHand, int32 Index, bool bIsPlayerAttacker);
 	void AddResultToViewPort();
 	
 	ETurnStatus CurrentTurnStatus = ETurnStatus::Waiting;

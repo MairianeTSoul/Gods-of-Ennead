@@ -610,18 +610,18 @@ void AGodsOfEnneadPlayerController::ScheduleAttacks(const UWorld* World, UHand* 
 
                 World->GetTimerManager().SetTimer(
                     AttackTimerHandle,
-                    FTimerDelegate::CreateLambda([this, AttackerHand, DefenderHand, i, bIsPlayerAttacker]()
+                    FTimerDelegate::CreateLambda([this, World, AttackerHand, DefenderHand, i, bIsPlayerAttacker]()
                     {
-                        ProcessAttack(AttackerHand, DefenderHand, i, bIsPlayerAttacker);
+                        ProcessAttack(World, AttackerHand, DefenderHand, i, bIsPlayerAttacker);
                     }),
-                    Delay * 1.5, false
+                    Delay * 2, false
                 );
             }
         }
     }
 }
 
-void AGodsOfEnneadPlayerController::ProcessAttack(UHand* AttackerHand, UHand* DefenderHand, int32 Index, bool bIsPlayerAttacker)
+void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* AttackerHand, UHand* DefenderHand, int32 Index, bool bIsPlayerAttacker)
 {
     if (!AttackerHand->FirstRow[Index] || !DefenderHand->FirstRow[Index] || bIsGameOver) return;
 
@@ -631,10 +631,19 @@ void AGodsOfEnneadPlayerController::ProcessAttack(UHand* AttackerHand, UHand* De
     {
         if (DefenderHand->SecondRow.IsValidIndex(Index) && DefenderHand->SecondRow[Index])
         {
-            FVector NewPos = DefenderHand->FirstRow[Index]->GetActorLocation();
-            DefenderHand->SecondRow[Index]->AnimateTo(&NewPos);
-            DefenderHand->FirstRow[Index] = DefenderHand->SecondRow[Index];
-            DefenderHand->SecondRow[Index] = nullptr;
+            FTimerHandle SwapCardTimerHandle;
+
+            World->GetTimerManager().SetTimer(
+                SwapCardTimerHandle,
+                FTimerDelegate::CreateLambda([this, DefenderHand, Index]()
+                {
+                    FVector NewPos = DefenderHand->FirstRow[Index]->GetActorLocation();
+                    DefenderHand->SecondRow[Index]->AnimateTo(&NewPos);
+                    DefenderHand->FirstRow[Index] = DefenderHand->SecondRow[Index];
+                    DefenderHand->SecondRow[Index] = nullptr;
+                }),
+                1, false
+            );
         }
         else
         {
@@ -644,25 +653,35 @@ void AGodsOfEnneadPlayerController::ProcessAttack(UHand* AttackerHand, UHand* De
 
     if (DefenderHand->AliveCards <= 0)
     {
-        bIsPlayerWin = bIsPlayerAttacker;
-        bIsGameOver = true;
-        AddResultToViewPort();
-        
-        EndLocation = FVector(6356, 11476, 4062);
-        EndRotation = FRotator(-17, -14, 0);
-        MovePlayerToTarget();
+        FTimerHandle ResultTimerHandle;
+
+        World->GetTimerManager().SetTimer(
+            ResultTimerHandle,
+            FTimerDelegate::CreateLambda([this, bIsPlayerAttacker]()
+            {
+                bIsPlayerWin = bIsPlayerAttacker;
+                bIsGameOver = true;
+                AddResultToViewPort();
+            }),
+            1.2, false
+        );
+
     }
 }
 
 
 void AGodsOfEnneadPlayerController::AddResultToViewPort()
 {
-    UE_LOG(LogTemp, Error, TEXT("Result : %hhd"), bIsPlayerWin);
-
+    UE_LOG(LogTemp, Warning, TEXT("Result : %hhd"), bIsPlayerWin);
+    
     const TSubclassOf<UUserWidget> widgetClass = LoadClass<UResultUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Result.WBP_Result_C"));
     const TObjectPtr<UResultUserWidget> ResultWidget = CreateWidget<UResultUserWidget>(GetWorld(), widgetClass);
     ResultWidget->SetResultText(bIsPlayerWin);
     ResultWidget->AddToViewport();
+    
+    EndLocation = FVector(6356, 11476, 4062);
+    EndRotation = FRotator(-17, -14, 0);
+    MovePlayerToTarget();
 }
 
 void AGodsOfEnneadPlayerController::DealCards(int32 NumCards, bool bIsPlayer)
@@ -766,7 +785,7 @@ void AGodsOfEnneadPlayerController::UpdateMovement(float DeltaTime)
     if (Alpha >= 1.0f)
     {
         bIsMoving = false;
-        if (CurrentTurnStatus != ETurnStatus::Second_Round_Waiting) SpawnActors();
+        if (!bIsGameOver) SpawnActors();
     }
 }
 

@@ -46,7 +46,10 @@ bool UTask::CheckTaskCompletion(const TArray<FDataCardStruct>& Cards, bool bIsCo
 		{
 			if (Pair.Value >= Count)
 			{
-				if (bIsCompleteStatusSet) isComplete = true;
+				if (bIsCompleteStatusSet) 
+					bIsComplete = true;
+				else 
+					bIsComputerComplete = true;
 				return true;
 			}
 		}
@@ -73,7 +76,10 @@ bool UTask::CheckTaskCompletion(const TArray<FDataCardStruct>& Cards, bool bIsCo
 				ConsecutiveCount++;
 				if (ConsecutiveCount >= Count)
 				{
-					if (bIsCompleteStatusSet) isComplete = true;
+					if (bIsCompleteStatusSet) 
+						bIsComplete = true;
+					else 
+						bIsComputerComplete = true;
 					return true;
 				}
 			}
@@ -84,7 +90,7 @@ bool UTask::CheckTaskCompletion(const TArray<FDataCardStruct>& Cards, bool bIsCo
 		}
 	}
 
-	if (bIsCompleteStatusSet) isComplete = false;
+	if (bIsCompleteStatusSet) bIsComplete = false;
 	return false;
 }
 
@@ -157,7 +163,12 @@ int32 UTask::GetClosestCountToCompletion(const TArray<FDataCardStruct>& Cards)
 
 bool UTask::GetStatusTask()
 {
-	return isComplete;
+	return bIsComplete;
+}
+
+bool UTask::GetComputerStatusTask()
+{
+	return bIsComputerComplete;
 }
 
 FString UTask::getDescriptionTask()

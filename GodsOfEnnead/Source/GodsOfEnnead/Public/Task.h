@@ -41,7 +41,8 @@ public:
 	ETaskType Type;
 
 	UPROPERTY()
-	bool isComplete;
+	bool bIsComplete;
+	bool bIsComputerComplete;
 
 	UTask();
 
@@ -55,5 +56,6 @@ public:
 	int32 GetClosestCountToCompletion(const TArray<FDataCardStruct>& Cards);
 	
 	bool GetStatusTask();
+	bool GetComputerStatusTask();
 	FString getDescriptionTask();
 };
