@@ -45,21 +45,23 @@ public:
 	FDataCardStruct CardsData;
 
 	UFUNCTION()
-	FDataCardStruct GetDataCard();
+	FDataCardStruct& GetDataCard();
 
 	UFUNCTION(BlueprintCallable, Category = "InteractiveObjectsActor")
 	void SetDataCard(int hp, int attack, FString cardName);
+	void Attack(ACardActor* OpponentCard);
 
 	void AnimateTo(const FVector* FinalPos = nullptr, const FRotator* FinalRot = nullptr);
 	virtual void Tick(float DeltaTime) override;
 
+	bool bIsAlive = true;
+	FVector TargetPosition;
 private:
 	bool bIsAnimating = false;
 	bool bAnimatePosition = false;
 	bool bAnimateRotation = false;
 	
 	FVector StartPosition;
-	FVector TargetPosition;
 	FRotator StartRotation;
 	FRotator TargetRotation;
 	float ElapsedTime;

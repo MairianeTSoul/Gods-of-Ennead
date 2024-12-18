@@ -21,7 +21,7 @@ void UHand::RemoveCard(ACardActor* Card)
 	{
 		FoundPosition->CardActor = nullptr;
 		CardsInHand--;
-		if (CardsInHand >= g_maxInHand)
+		if (CardsInHand >= GMaxInHand)
 		{
 			for (int32 i = 0; i < CardsInHand; ++i)
 			{
@@ -83,4 +83,66 @@ bool UHand::CheckTask(UTask* Task)
 	}
 
 	return Task->CheckTaskCompletion(Cards, bIsPlayer);
+}
+
+void UHand::RearrangeCards(int CardsInRow)
+{
+	constexpr float CardSpacing = 550;
+	const float YShift = static_cast<float>(GMaxInHand - CardsInRow + 1) / 2 * CardSpacing;
+	UE_LOG(LogTemp, Log, TEXT("shift %f"), YShift);
+	UE_LOG(LogTemp, Log, TEXT("карт в ряду %d"), CardsInRow);
+	UE_LOG(LogTemp, Log, TEXT("start player pos %f"), GPlayer_Card_Location.Y);
+	
+	for (int32 i = 0; i < CardPositions.Num(); ++i)
+	{
+		if (CardPositions[i].CardActor == nullptr)
+		{
+			for (int32 j = i + 1; j < CardPositions.Num(); ++j)
+			{
+				if (CardPositions[j].CardActor != nullptr)
+				{
+					CardPositions[i].CardActor = CardPositions[j].CardActor;
+					FVector NewPos = CardPositions[i].Position;
+					if (FirstRow.Num() >= CardsInRow)
+					{
+						if (bIsPlayer) NewPos.X -= 300;
+						else NewPos.X += 300;
+						NewPos.Z -= 5;
+						UE_LOG(LogTemp, Log, TEXT("y index copy%d"), SecondRow.Num());
+						NewPos.Y = FirstRow[SecondRow.Num()]->TargetPosition.Y;
+						SecondRow.Add(CardPositions[i].CardActor);
+					}
+					else
+					{
+						FirstRow.Add(CardPositions[i].CardActor);
+						NewPos.Y += YShift;
+					}
+					CardPositions[i].Position = NewPos;
+					CardPositions[i].CardActor->AnimateTo(&CardPositions[i].Position);
+					UE_LOG(LogTemp, Log, TEXT("New card Pos %f"), CardPositions[i].Position.Y);
+					CardPositions[j].CardActor = nullptr;
+					break;
+				}
+			}
+		}
+		else
+		{
+			FVector NewPos = CardPositions[i].Position;
+			if (FirstRow.Num() >= CardsInRow)
+			{
+				if (bIsPlayer) NewPos.X -= 300;
+				else NewPos.X += 300;
+				NewPos.Z -= 5;
+				NewPos.Y = FirstRow[SecondRow.Num()]->TargetPosition.Y;
+				SecondRow.Add(CardPositions[i].CardActor);
+			}
+			else
+			{
+				FirstRow.Add(CardPositions[i].CardActor);
+				NewPos.Y += YShift;
+			}
+			CardPositions[i].CardActor->AnimateTo(&NewPos);
+			CardPositions[i].Position = NewPos;
+		}
+	}
 }

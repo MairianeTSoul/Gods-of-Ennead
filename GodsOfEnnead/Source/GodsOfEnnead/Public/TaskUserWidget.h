@@ -7,6 +7,7 @@
 #include <CardActor.h>
 
 #include "Task.h"
+#include "Components/Button.h"
 #include "TaskUserWidget.generated.h"
 
 // UCLASS(Blueprintable)
@@ -98,6 +99,8 @@ UCLASS()
 class GODSOFENNEAD_API UTaskUserWidget : public UUserWidget
 {
 	GENERATED_BODY()
+	UFUNCTION(BlueprintCallable, Category = "Task")
+	void OnReadyButtonClicked();
 	public:
 	UPROPERTY()
 	TObjectPtr<UTask> Task;
@@ -107,7 +110,12 @@ class GODSOFENNEAD_API UTaskUserWidget : public UUserWidget
 	UFUNCTION(BlueprintCallable, Category = "Task")
 	bool getStatusTask();
 
+	UFUNCTION(BlueprintCallable, Category = "Task")
+	bool setButtonVisibility();
+
 	UFUNCTION()
 	void setTask(UTask* NewTask);
+	
 
+	bool bVisibility = false;
 };

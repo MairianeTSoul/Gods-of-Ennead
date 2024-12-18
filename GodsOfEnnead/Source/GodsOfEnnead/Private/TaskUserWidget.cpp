@@ -3,6 +3,8 @@
 
 #include "TaskUserWidget.h"
 
+#include "GodsOfEnnead/GodsOfEnneadPlayerController.h"
+
 // bool URule::checkRule(ACardActor& Card)
 // {
 // 	return false;
@@ -78,6 +80,15 @@
 // 	return description;
 // }
 
+void UTaskUserWidget::OnReadyButtonClicked()
+{
+	if (AGodsOfEnneadPlayerController* PlayerController = Cast<AGodsOfEnneadPlayerController>(GetOwningPlayer()))
+	{
+		PlayerController->OnReadyButtonClicked();
+		bVisibility = false;
+	}
+}
+
 FString UTaskUserWidget::getDescriptionTask()
 {
 	if (!Task)
@@ -100,4 +111,9 @@ bool UTaskUserWidget::getStatusTask()
 void UTaskUserWidget::setTask(UTask* NewTask)
 {
 	Task = NewTask;
+}
+
+bool UTaskUserWidget::setButtonVisibility()
+{
+	return bVisibility;
 }

@@ -1,5 +1,8 @@
 ﻿#include "CardActor.h"
+
+#include "CardUserWidget.h"
 #include "Components/BoxComponent.h"
+#include "Components/WidgetComponent.h"
 #include "Engine/Engine.h"
 
 ACardActor::ACardActor()
@@ -87,6 +90,19 @@ void ACardActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (const UWidgetComponent* WidgetComponent = this->FindComponentByClass<UWidgetComponent>())
+	{
+		if (UCardUserWidget* CardWidget = Cast<UCardUserWidget>(WidgetComponent->GetWidget()))
+		{
+			if (CardWidget->new_hp <= 0)
+			{
+				FVector DownPosition = GetActorLocation();
+				DownPosition.Z -= 200.0f;
+				AnimateTo(&DownPosition);
+			}
+		}
+	}
+	
 	if (bIsAnimating)
 	{
 		ElapsedTime += DeltaTime;
@@ -113,7 +129,7 @@ void ACardActor::Tick(float DeltaTime)
 }
 
 
-FDataCardStruct ACardActor::GetDataCard()
+FDataCardStruct& ACardActor::GetDataCard()
 {
 	return CardsData;
 }
@@ -125,3 +141,37 @@ void ACardActor::SetDataCard(int hp, int attack, FString cardName)
 	CardsData.cardName = cardName;
 	CardsData.AssociatedActor = this;
 }
+
+void ACardActor::Attack(ACardActor* OpponentCard)
+{
+	if (OpponentCard)
+	{
+		FVector StartCardPosition = GetActorLocation();
+		FVector OpponentCardLocation = OpponentCard->GetActorLocation();
+		OpponentCardLocation.Z += 1.0f;
+		AnimateTo(&OpponentCardLocation);
+		const int Damage = GetDataCard().attack;
+		OpponentCard->GetDataCard().hp -= Damage;
+
+		if (OpponentCard->GetDataCard().hp <= 0)
+		{
+			OpponentCard->bIsAlive = false;
+		}
+
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([this, OpponentCard, StartCardPosition]()
+		{
+
+			if (const UWidgetComponent* WidgetComponent = OpponentCard->FindComponentByClass<UWidgetComponent>())
+			{
+				if (UCardUserWidget* CardWidget = Cast<UCardUserWidget>(WidgetComponent->GetWidget()))
+				{
+					CardWidget->new_hp = std::max(0, OpponentCard->GetDataCard().hp);
+				}
+			}
+
+			AnimateTo(&StartCardPosition);
+		}), 1.0f, false);
+	}
+}
+

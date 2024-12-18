@@ -29,7 +29,6 @@ public:
 	UPROPERTY()
 	TObjectPtr<UTask> Task;
 
-protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = UI)
 	TSubclassOf<UTaskUserWidget> widgetClass;
 	

@@ -85,12 +85,12 @@ void AGodsOfEnneadPlayerController::SetupInputComponent()
 
 void AGodsOfEnneadPlayerController::TakeCard()
 {
-    if (CurrentTurnStatus == ETurnStatus::Waiting_Choose)
+    FHitResult HitResult;
+    if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
     {
-       FHitResult HitResult;
-        if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
+        if (ACardActor* ClickedCard = Cast<ACardActor>(HitResult.GetActor()))
         {
-            if (ACardActor* ClickedCard = Cast<ACardActor>(HitResult.GetActor()))
+            if (CurrentTurnStatus == ETurnStatus::Waiting_Choose)
             {
                 if (!DeckCardsActors.Contains(ClickedCard) && !ShowDeckCardsActors.Contains(ClickedCard)) return;
                
@@ -110,41 +110,34 @@ void AGodsOfEnneadPlayerController::TakeCard()
                 CurrentTurnStatus = ETurnStatus::Player_Turn;
                 return;
             }
-        }
-    }
-
-    if (CurrentTurnStatus == ETurnStatus::Player_Turn)
-    {
-       FHitResult HitResult;
-        if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
-        {
-            if (ACardActor* ClickedCard = Cast<ACardActor>(HitResult.GetActor()))
+            
+            if (CurrentTurnStatus == ETurnStatus::Player_Turn)
             {
-                bool bCardFound = PlayersHands[1]->CardPositions.FindByPredicate([ClickedCard](const FCardPosition& CardPosition)
+                if (const bool bCardFound = PlayersHands[1]->CardPositions.FindByPredicate([ClickedCard](const FCardPosition& CardPosition)
                 {
                     return CardPosition.CardActor == ClickedCard;
-                }) != nullptr;
-                if (!bCardFound) return;
+                }) != nullptr; !bCardFound) return;
                
                 UE_LOG(LogTemp, Log, TEXT("Player: Card clicked: %s"), *ClickedCard->CardsData.cardName);
                 FVector TargetLocation = ShowDeckCardsActors.Num() ? ShowDeckCardsActors.Last()->GetActorLocation()
                                                     : GShow_Location;
                 PlayersHands[1]->MoveToDeck(ClickedCard, TargetLocation);
                 ShowDeckCardsActors.Add(ClickedCard);
-                bool bCheck = PlayersHands[1]->CheckTask(CurrentTaskController->Task);
+                const bool bCheck = PlayersHands[1]->CheckTask(CurrentTaskController->Task);
                 UE_LOG(LogTemp, Error, TEXT("CheckTask: %hhd"), bCheck);
-                if (bCheck && DeckCardsActors.IsEmpty())
+                if (bCheck and PlayersHands[0]->CheckTask(CurrentTaskController->Task))
+                {
+                    StartSecondTour();
+                    return;
+                }
+                if (bCheck && DeckCardsActors.IsEmpty() )
                 {
                     bIsPlayerWin = true;
                     AddResultToViewPort();
                     CurrentTurnStatus = ETurnStatus::Waiting;
                     return;
                 }
-                if (bCheck)
-                {
-                    StartSecondTour();
-                    return;
-                }
+                
                 CurrentTurnStatus = ETurnStatus::Computer_Turn;
 
                 FTimerHandle DelayTimerHandle;
@@ -155,6 +148,13 @@ void AGodsOfEnneadPlayerController::TakeCard()
                     2.0f,
                     false
                 );
+                return;
+            }
+            
+
+            if (CurrentTurnStatus == ETurnStatus::Second_Round_Player)
+            {
+                SelectCard(ClickedCard);
             }
         }
     }
@@ -179,9 +179,9 @@ void AGodsOfEnneadPlayerController::MovePlayerToTarget()
 void AGodsOfEnneadPlayerController::StartGame()
 {
     UE_LOG(LogTemp, Log, TEXT("StartGame: Deal Cards to Player"));
-    DealCards(g_maxInHand, false);
+    DealCards(GMaxInHand, false);
     UE_LOG(LogTemp, Log, TEXT("StartGame: Deal Cards to Bot"));
-    DealCards(g_maxInHand, true);
+    DealCards(GMaxInHand, true);
 
     PlayersHands[1]->CheckTask(CurrentTaskController->Task);
     PlayRound();
@@ -189,18 +189,26 @@ void AGodsOfEnneadPlayerController::StartGame()
 
 void AGodsOfEnneadPlayerController::PlayRound()
 {
+    const bool bCheck = PlayersHands[1]->CheckTask(CurrentTaskController->Task);
+    UE_LOG(LogTemp, Error, TEXT("CheckTask: %hhd"), bCheck);
+    if (bCheck and PlayersHands[0]->CheckTask(CurrentTaskController->Task))
+    {
+        StartSecondTour();
+        return;
+    }
     CurrentTurnStatus = ETurnStatus::Waiting_Choose;
 }
 
 void AGodsOfEnneadPlayerController::StartSecondTour()
 {
+    UE_LOG(LogTemp, Log, TEXT("ВТОРОЙ РАУНД"));
     CurrentTurnStatus = ETurnStatus::Second_Round_Start;
-    DeckCardsActors.Empty();
-    ShowDeckCardsActors.Empty();
     
     for (int32 PlayerIndex = 0; PlayerIndex < 2; ++PlayerIndex)
     {
         UHand* PlayerHand = PlayersHands[PlayerIndex];
+        if ( PlayerIndex == 0) UE_LOG(LogTemp, Log, TEXT("Компьютер"));
+        if ( PlayerIndex == 1) UE_LOG(LogTemp, Log, TEXT("Игрок"));
 
         TArray<FDataCardStruct> CurrentCards;
         for (const FCardPosition& Position : PlayerHand->CardPositions)
@@ -208,6 +216,7 @@ void AGodsOfEnneadPlayerController::StartSecondTour()
             if (Position.CardActor)
             {
                 CurrentCards.Add(Position.CardActor->GetDataCard());
+                UE_LOG(LogTemp, Log, TEXT("%s"), *Position.CardActor->CardsData.cardName);
             }
         }
 
@@ -228,12 +237,71 @@ void AGodsOfEnneadPlayerController::StartSecondTour()
                 {
                     UE_LOG(LogTemp, Log, TEXT("Карта удалена: %s, так как удаление не влияло на задачу"), *CardToTest->CardsData.cardName);
                     PlayerHand->RemoveCard(CardToTest);
+                    CurrentCards.Remove(CardToTest->GetDataCard());
                     CardToTest->Destroy();
                 }
             }
         }
+        
+        PlayerHand->RearrangeCards(std::min(PlayersHands[0]->CardsInHand, PlayersHands[1]->CardsInHand));
+        CurrentTurnStatus = ETurnStatus::Second_Round_Player;
+        CurrentTaskController->TaskWidget->bVisibility = true;
+    }
+
+    FVector DeckHideLoc = GHide_Location;
+    FVector ShowDeckHideLoc = GShow_Location;
+    DeckHideLoc.Z = 0;
+    ShowDeckHideLoc.Z = 0;
+
+    for (ACardActor* Card : DeckCardsActors)
+    {
+        Card->AnimateTo(&DeckHideLoc);
+    }
+    for (ACardActor* Card : ShowDeckCardsActors)
+    {
+        Card->AnimateTo(&ShowDeckHideLoc);
+    }
+    FTimerHandle DelayTimerHandle;
+    GetWorld()->GetTimerManager().SetTimer(
+        DelayTimerHandle,
+        this,
+        &AGodsOfEnneadPlayerController::RemoveDeckCads,
+        5.0f,
+        false
+    );
+
+    for ( FCardPosition& Position : PlayersHands[0]->CardPositions)
+    {
+        Position.Position.X -= 200;
+        if (Position.CardActor)
+        {
+            Position.CardActor->AnimateTo(&Position.Position);
+        }
+    }
+    for ( FCardPosition& Position : PlayersHands[1]->CardPositions)
+    {
+        Position.Position.X += 100;
+        if (Position.CardActor)
+        {
+            Position.CardActor->AnimateTo(&Position.Position);
+        }
     }
 }
+
+void AGodsOfEnneadPlayerController::RemoveDeckCads()
+{
+    for (ACardActor* Card : DeckCardsActors)
+    {
+        Card->Destroy();
+    }
+    for (ACardActor* Card : ShowDeckCardsActors)
+    {
+        Card->Destroy();
+    }
+    DeckCardsActors.Empty();
+    ShowDeckCardsActors.Empty();
+}
+
 
 void AGodsOfEnneadPlayerController::ComputerTurn()
 {
@@ -350,10 +418,250 @@ void AGodsOfEnneadPlayerController::DiscardUnnecessaryCard()
     PlayRound();
 }
 
+void AGodsOfEnneadPlayerController::SelectCard(ACardActor* Card)
+{
+    if (SelectedCard == nullptr)
+    {
+        SelectedCard = Card;
+        FVector NewLocation = Card->GetActorLocation();
+        NewLocation.Z += 100.0f;
+        Card->AnimateTo(&NewLocation);
+    }
+    else if (SelectedCard == Card)
+    {
+        FVector OriginalLocation = Card->GetActorLocation();
+        OriginalLocation.Z -= 100.0f;
+        Card->AnimateTo(&OriginalLocation);
+        SelectedCard = nullptr;
+    }
+    else
+    {
+        SwapCards(SelectedCard, Card);
+        SelectedCard = nullptr;
+    }
+}
+
+void AGodsOfEnneadPlayerController::SwapCards(ACardActor* Card1, ACardActor* Card2)
+{
+    FVector Location1 = Card1->GetActorLocation();
+    Location1.Z -= 100.0f;
+    const FVector Location2 = Card2->GetActorLocation();
+
+    Card1->AnimateTo(&Location2);
+    Card2->AnimateTo(&Location1);
+
+    int32 Index1 = PlayersHands[1]->FirstRow.Find(Card1);
+    int32 Index2 = PlayersHands[1]->FirstRow.Find(Card2);
+    if (Index1 != INDEX_NONE && Index2 != INDEX_NONE)
+    {
+        PlayersHands[1]->FirstRow.Swap(Index1, Index2);
+        return;
+    }
+    
+    if (Index1 == INDEX_NONE && Index2 != INDEX_NONE)
+    {
+        Index1 = PlayersHands[1]->SecondRow.Find(Card1);
+
+        ACardActor* TempCard = PlayersHands[1]->SecondRow[Index1];
+        PlayersHands[1]->SecondRow[Index1] = PlayersHands[1]->FirstRow[Index2];
+        PlayersHands[1]->FirstRow[Index2] = TempCard;
+        return;
+    }
+    
+    if (Index1 != INDEX_NONE && Index2 == INDEX_NONE)
+    {
+        Index2 = PlayersHands[1]->SecondRow.Find(Card2);
+        
+        ACardActor* TempCard = PlayersHands[1]->FirstRow[Index1];
+        PlayersHands[1]->FirstRow[Index1] = PlayersHands[1]->SecondRow[Index2];
+        PlayersHands[1]->SecondRow[Index2] = TempCard;
+        return;
+    }
+    
+    Index1 = PlayersHands[1]->SecondRow.Find(Card1);
+    Index2 = PlayersHands[1]->SecondRow.Find(Card2);
+    PlayersHands[1]->SecondRow.Swap(Index1, Index2);
+}
+
+void AGodsOfEnneadPlayerController::OnReadyButtonClicked()
+{
+    float Delay = 0.5f;
+    int TotalAnimations = 0;
+    CurrentTurnStatus = ETurnStatus::Second_Round_Waiting;
+
+    for (int i = 0; i < 2; i++)
+    {
+        for (ACardActor* Card : PlayersHands[i]->FirstRow)
+        {
+            FVector Location1 = Card->GetActorLocation();
+            Location1.Z = 2000.0f;
+            TotalAnimations++;
+            GetWorldTimerManager().SetTimerForNextTick(
+                [this, Card, Location1, Delay]()
+                {
+                    FTimerHandle TempHandle;
+                    GetWorldTimerManager().SetTimer(
+                        TempHandle,
+                        FTimerDelegate::CreateLambda([Card, Location1]()
+                        {
+                            Card->AnimateTo(&Location1, &GShow_Rotation);
+                        }),
+                        Delay,
+                        false
+                    );
+                });
+            Delay += 0.5f;
+        }
+
+        for (ACardActor* Card : PlayersHands[i]->SecondRow)
+        {
+            FVector Location1 = Card->GetActorLocation();
+            Location1.Z = 1995.0f;
+            TotalAnimations++;
+            GetWorldTimerManager().SetTimerForNextTick(
+                [this, Card, Location1, Delay]()
+                {
+                    FTimerHandle TempHandle;
+                    GetWorldTimerManager().SetTimer(
+                        TempHandle,
+                        FTimerDelegate::CreateLambda([Card, Location1]()
+                        {
+                            Card->AnimateTo(&Location1, &GShow_Rotation);
+                        }),
+                        Delay,
+                        false
+                    );
+                });
+            Delay += 0.5f;
+        }
+    }
+
+    GetWorldTimerManager().SetTimerForNextTick(
+    [this, TotalAnimations]()
+    {
+        FTimerHandle DelayHandle;
+        GetWorldTimerManager().SetTimer(
+            DelayHandle,
+            FTimerDelegate::CreateLambda([this]()
+            {
+                StartAttacks();
+            }),
+            TotalAnimations / 2 + 2.0f,
+            false
+        );
+    });
+}
+
+void AGodsOfEnneadPlayerController::StartAttacks()
+{
+    const UWorld* World = GetWorld();
+    if (!World) return;
+
+    PlayersHands[0]->AliveCards = PlayersHands[0]->FirstRow.Num();
+    PlayersHands[1]->AliveCards = PlayersHands[1]->FirstRow.Num();
+    
+    ScheduleRoundAttack();
+}
+
+void AGodsOfEnneadPlayerController::ScheduleRoundAttack()
+{
+    const UWorld* World = GetWorld();
+    if (!World) return;
+
+    static int32 Delay = 0;
+
+    ScheduleAttacks(World, PlayersHands[1], PlayersHands[0], Delay, true);
+
+    ScheduleAttacks(World, PlayersHands[0], PlayersHands[1], Delay, false);
+
+    FTimerHandle NextRoundHandle;
+    World->GetTimerManager().SetTimer(
+        NextRoundHandle,
+        FTimerDelegate::CreateLambda([this]()
+        {
+            if (PlayersHands[0]->AliveCards > 0 && PlayersHands[1]->AliveCards > 0)
+            {
+                 ScheduleRoundAttack();
+            }
+        }),
+        Delay * 1.4 + 1.7f, false
+    );
+
+    if (PlayersHands[0]->AliveCards <= 0 || PlayersHands[1]->AliveCards <= 0)
+    {
+        bIsPlayerWin = PlayersHands[0]->AliveCards <= 0;
+        AddResultToViewPort();
+
+        EndLocation = FVector(6356, 11476, 4062);
+        EndRotation = FRotator(-17, -14, 0);
+        MovePlayerToTarget();
+    }
+    Delay = 0;
+}
+
+void AGodsOfEnneadPlayerController::ScheduleAttacks(const UWorld* World, UHand* AttackerHand, UHand* DefenderHand, int32& Delay, bool bIsPlayerAttacker)
+{
+    for (int32 i = 0; i < AttackerHand->FirstRow.Num(); i++)
+    {
+        if (AttackerHand->FirstRow[i] && DefenderHand->FirstRow[i])
+        {
+            if (AttackerHand->FirstRow[i]->bIsAlive && DefenderHand->FirstRow[i]->bIsAlive)
+            {
+                Delay++;
+                FTimerHandle AttackTimerHandle;
+
+                World->GetTimerManager().SetTimer(
+                    AttackTimerHandle,
+                    FTimerDelegate::CreateLambda([this, AttackerHand, DefenderHand, i, bIsPlayerAttacker]()
+                    {
+                        ProcessAttack(AttackerHand, DefenderHand, i, bIsPlayerAttacker);
+                    }),
+                    Delay * 1.5, false
+                );
+            }
+        }
+    }
+}
+
+void AGodsOfEnneadPlayerController::ProcessAttack(UHand* AttackerHand, UHand* DefenderHand, int32 Index, bool bIsPlayerAttacker)
+{
+    if (!AttackerHand->FirstRow[Index] || !DefenderHand->FirstRow[Index]) return;
+
+    AttackerHand->FirstRow[Index]->Attack(DefenderHand->FirstRow[Index]);
+
+    if (!DefenderHand->FirstRow[Index]->bIsAlive)
+    {
+        if (DefenderHand->SecondRow.IsValidIndex(Index) && DefenderHand->SecondRow[Index])
+        {
+            FVector NewPos = DefenderHand->FirstRow[Index]->GetActorLocation();
+            DefenderHand->SecondRow[Index]->AnimateTo(&NewPos);
+            DefenderHand->FirstRow[Index] = DefenderHand->SecondRow[Index];
+            DefenderHand->SecondRow[Index] = nullptr;
+        }
+        else
+        {
+            DefenderHand->AliveCards--;
+        }
+    }
+
+    if (DefenderHand->AliveCards <= 0)
+    {
+        bIsPlayerWin = bIsPlayerAttacker;
+        AddResultToViewPort();
+        
+        EndLocation = FVector(6356, 11476, 4062);
+        EndRotation = FRotator(-17, -14, 0);
+        MovePlayerToTarget();
+    }
+}
+
+
 void AGodsOfEnneadPlayerController::AddResultToViewPort()
 {
-    TSubclassOf<UUserWidget> widgetClass = LoadClass<UResultUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Result.WBP_Result_C"));
-    TObjectPtr<UResultUserWidget> ResultWidget = CreateWidget<UResultUserWidget>(GetWorld(), widgetClass);
+    UE_LOG(LogTemp, Error, TEXT("Result : %hhd"), bIsPlayerWin);
+
+    const TSubclassOf<UUserWidget> widgetClass = LoadClass<UResultUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Result.WBP_Result_C"));
+    const TObjectPtr<UResultUserWidget> ResultWidget = CreateWidget<UResultUserWidget>(GetWorld(), widgetClass);
     ResultWidget->SetResultText(bIsPlayerWin);
     ResultWidget->AddToViewport();
 }
@@ -400,7 +708,7 @@ void AGodsOfEnneadPlayerController::DealCards(int32 NumCards, bool bIsPlayer)
             }
         });
 
-        GetWorldTimerManager().SetTimer(TimerHandle, TimerDelegate, 1.5f * (i + 1), false);
+        GetWorldTimerManager().SetTimer(TimerHandle, TimerDelegate, 0.7f * (i + 1), false);
     }
 }
 
@@ -459,7 +767,7 @@ void AGodsOfEnneadPlayerController::UpdateMovement(float DeltaTime)
     if (Alpha >= 1.0f)
     {
         bIsMoving = false;
-        SpawnActors();
+        if (CurrentTurnStatus != ETurnStatus::Second_Round_Waiting) SpawnActors();
     }
 }
 

@@ -8,7 +8,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Cards/Hand.h"
 #include "GodsOfEnneadPlayerController.generated.h"
-class ACardActor;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAnimationFinished);
 
 constexpr uint32 GCardCount = 108;
@@ -16,10 +16,10 @@ constexpr uint32 GCardCount = 108;
 const FRotator GShow_Rotation = FRotator(90.0f, 0, 180);
 const FRotator GHide_Rotation = FRotator(-90.0f, 0, 0);
 
-const FVector GShow_Location = FVector(7977.0f, 7680.0f, 2200.0f);
-const FVector GHide_Location = FVector(7977.00f, 6755.00f, 2000.00f);
+const FVector GShow_Location = FVector(7977.0f, 7680.0f, 2000.0f);
+const FVector GHide_Location = FVector(7977.00f, 6755.00f, 1800.00f);
 const FVector GComputer_Card_Location = FVector(8718.0f, 5571.0f, 2216.0f);
-const FVector GPlayer_Card_Location = FVector(7300.0f, 5571.0f, 2216.0f);
+const FVector GPlayer_Card_Location = FVector(7350.0f, 5571.0f, 2216.0f);
 
 const FVector GCard_Scale = FVector(90.0f, 19.471221f, 180.528779f);
 
@@ -43,6 +43,7 @@ public:
 
 	bool bIsPlayerWin = false;
 
+	void ProcessAttack(UHand* AttackerHand, UHand* DefenderHand, int32 Index, bool bIsPlayerAttacker);
 	void AddResultToViewPort();
 	
 	ETurnStatus CurrentTurnStatus = ETurnStatus::Waiting;
@@ -50,10 +51,24 @@ public:
 	void StartGame();
 	void PlayRound();
 	void StartSecondTour();
+	void RemoveDeckCads();
 
 	void ComputerTurn();
 	void DiscardUnnecessaryCard();
+
 	
+	UPROPERTY()
+	ACardActor* SelectedCard;
+
+	void SelectCard(ACardActor* Card);
+
+	void SwapCards(ACardActor* Card1, ACardActor* Card2);
+	void OnReadyButtonClicked();
+	void StartAttacks();
+	void ScheduleRoundAttack();
+	void ScheduleAttacks(const UWorld* World, UHand* AttackerHand, UHand* DefenderHand, int32& Delay,
+	                     bool bIsPlayerAttacker);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cards")
 	TArray<UHand*> PlayersHands;
 
@@ -65,7 +80,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "CardsController")
 	void SpawnActors();
 
-	TArray<ACardActor*> AllCardsActors;
 	TArray<ACardActor*> DeckCardsActors;
 	TArray<ACardActor*> ShowDeckCardsActors;
 

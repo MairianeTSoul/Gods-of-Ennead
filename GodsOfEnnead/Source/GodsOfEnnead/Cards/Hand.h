@@ -5,7 +5,7 @@
 #include "TaskUserWidget.h"
 #include "Hand.generated.h"
 
-inline int32 g_maxInHand = 6;
+inline int32 GMaxInHand = 6;
 UCLASS(Blueprintable)
 class GODSOFENNEAD_API UHand : public UObject
 {
@@ -14,7 +14,10 @@ class GODSOFENNEAD_API UHand : public UObject
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hand")
 	TArray<FCardPosition> CardPositions;
+	TArray<ACardActor*> FirstRow;
+	TArray<ACardActor*> SecondRow;
 	int CardsInHand = 0;
+	int AliveCards = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hand")
 	bool bIsPlayer;
@@ -28,4 +31,5 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Hand")
 	bool CheckTask(UTask* Task);
+	void RearrangeCards(int CardsInRow);
 };
