@@ -81,7 +81,15 @@ void AGodsOfEnneadPlayerController::SetupInputComponent()
     if (InputComponent)
     {
         InputComponent->BindAction("SelectCard", IE_Pressed, this, &AGodsOfEnneadPlayerController::TakeCard);
-    }}
+        InputComponent->BindAction("ExitToMainMenu", IE_Pressed, this, &AGodsOfEnneadPlayerController::ExitToMainMenu);
+    }
+}
+
+void AGodsOfEnneadPlayerController::ExitToMainMenu()
+{
+    UE_LOG(LogTemp, Error, TEXT("Game over"));
+    UGameplayStatics::OpenLevel(this, FName("/Game/Scene/Main_Menu"));
+}
 
 void AGodsOfEnneadPlayerController::TakeCard()
 {
@@ -491,7 +499,7 @@ void AGodsOfEnneadPlayerController::OnReadyButtonClicked()
 
     for (int i = 0; i < 2; i++)
     {
-        for (ACardActor* Card : PlayersHands[i]->FirstRow)
+        for (ACardActor* Card : PlayersHands[i]->SecondRow)
         {
             FVector Location1 = Card->GetActorLocation();
             Location1.Z = 2000.0f;
@@ -513,7 +521,7 @@ void AGodsOfEnneadPlayerController::OnReadyButtonClicked()
             Delay += 0.5f;
         }
 
-        for (ACardActor* Card : PlayersHands[i]->SecondRow)
+        for (ACardActor* Card : PlayersHands[i]->FirstRow)
         {
             FVector Location1 = Card->GetActorLocation();
             Location1.Z = 1995.0f;
@@ -586,16 +594,6 @@ void AGodsOfEnneadPlayerController::ScheduleRoundAttack()
         }),
         Delay * 1.4 + 1.7f, false
     );
-
-    if (PlayersHands[0]->AliveCards <= 0 || PlayersHands[1]->AliveCards <= 0)
-    {
-        bIsPlayerWin = PlayersHands[0]->AliveCards <= 0;
-        AddResultToViewPort();
-
-        EndLocation = FVector(6356, 11476, 4062);
-        EndRotation = FRotator(-17, -14, 0);
-        MovePlayerToTarget();
-    }
     Delay = 0;
 }
 
@@ -625,7 +623,7 @@ void AGodsOfEnneadPlayerController::ScheduleAttacks(const UWorld* World, UHand* 
 
 void AGodsOfEnneadPlayerController::ProcessAttack(UHand* AttackerHand, UHand* DefenderHand, int32 Index, bool bIsPlayerAttacker)
 {
-    if (!AttackerHand->FirstRow[Index] || !DefenderHand->FirstRow[Index]) return;
+    if (!AttackerHand->FirstRow[Index] || !DefenderHand->FirstRow[Index] || bIsGameOver) return;
 
     AttackerHand->FirstRow[Index]->Attack(DefenderHand->FirstRow[Index]);
 
@@ -647,6 +645,7 @@ void AGodsOfEnneadPlayerController::ProcessAttack(UHand* AttackerHand, UHand* De
     if (DefenderHand->AliveCards <= 0)
     {
         bIsPlayerWin = bIsPlayerAttacker;
+        bIsGameOver = true;
         AddResultToViewPort();
         
         EndLocation = FVector(6356, 11476, 4062);
