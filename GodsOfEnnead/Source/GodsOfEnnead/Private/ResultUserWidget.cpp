@@ -9,12 +9,12 @@ void UResultUserWidget::SetResultText(bool bIsWin)
 
 	if (bIsWin)
 	{
-		ResultText->SetText(FText::FromString("WIN"));
-		ResultText->SetColorAndOpacity(FSlateColor(FLinearColor::Green));
+		ResultText->SetText(FText::FromString("YOU WIN"));
+		ResultText->SetColorAndOpacity(FSlateColor(FLinearColor(0.020833, 0.012454, 0.007127, 1)));
 	}
 	else
 	{
 		ResultText->SetText(FText::FromString("GAME OVER"));
-		ResultText->SetColorAndOpacity(FSlateColor(FLinearColor::Red));
+		ResultText->SetColorAndOpacity(FSlateColor(FLinearColor(0.020833, 0.012454, 0.007127, 1)));
 	}
 }

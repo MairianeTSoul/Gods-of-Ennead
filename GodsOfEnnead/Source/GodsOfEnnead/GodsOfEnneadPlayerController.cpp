@@ -684,6 +684,19 @@ void AGodsOfEnneadPlayerController::AddResultToViewPort()
     MovePlayerToTarget();
 }
 
+//void AGodsOfEnneadPlayerController::AddStatusToViewPort()
+//{
+//
+//    const TSubclassOf<UUserWidget> widgetClass = LoadClass<UResultUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Status.WBP_Status_C"));
+//    const TObjectPtr<UResultUserWidget> ResultWidget = CreateWidget<UResultUserWidget>(GetWorld(), widgetClass);
+//    ResultWidget->SetResultText(bIsPlayerWin);
+//    ResultWidget->AddToViewport();
+//
+//    EndLocation = FVector(6356, 11476, 4062);
+//    EndRotation = FRotator(-17, -14, 0);
+//    MovePlayerToTarget();
+//}
+
 void AGodsOfEnneadPlayerController::DealCards(int32 NumCards, bool bIsPlayer)
 {
     int PlayerIndex = bIsPlayer ? 1 : 0;
