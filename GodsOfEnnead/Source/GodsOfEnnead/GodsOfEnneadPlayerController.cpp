@@ -522,7 +522,10 @@ void AGodsOfEnneadPlayerController::OnReadyButtonClicked()
         for (ACardActor* Card : PlayersHands[i]->SecondRow)
         {
             FVector Location1 = Card->GetActorLocation();
-            Location1.Z = 2000.0f;
+            if (PlayersHands[i]->bIsPlayer)
+                Location1.Z = 1756.0f;
+            else
+                Location1.Z = 1760.0f;
             TotalAnimations++;
             GetWorldTimerManager().SetTimerForNextTick(
                 [this, Card, Location1, Delay]()
@@ -544,7 +547,7 @@ void AGodsOfEnneadPlayerController::OnReadyButtonClicked()
         for (ACardActor* Card : PlayersHands[i]->FirstRow)
         {
             FVector Location1 = Card->GetActorLocation();
-            Location1.Z = 1995.0f;
+            Location1.Z = 1758.0f;
             TotalAnimations++;
             GetWorldTimerManager().SetTimerForNextTick(
                 [this, Card, Location1, Delay]()
@@ -603,10 +606,12 @@ void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* At
         }
         else
         {
+            do {
+                CurrentAttackerIndex++;
+                if (CurrentAttackerIndex >= PlayersHands[0]->FirstRow.Num())
+                    CurrentAttackerIndex = 0;
+            } while(!PlayersHands[1]->FirstRow[CurrentAttackerIndex]->bIsAlive || !PlayersHands[0]->FirstRow[CurrentAttackerIndex]->bIsAlive);
             CurrentTurnStatus = ETurnStatus::Second_Round_Dice;
-            CurrentAttackerIndex++;
-            if (CurrentAttackerIndex >= PlayersHands[0]->FirstRow.Num())
-                CurrentAttackerIndex = 0;
         }
         return;
     };
@@ -696,14 +701,24 @@ void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* At
 
     if (!bIsPlayerAttacker)
     {
+        do {
+            CurrentAttackerIndex++;
+            if (CurrentAttackerIndex >= PlayersHands[0]->FirstRow.Num())
+                CurrentAttackerIndex = 0;
+        } while(!PlayersHands[1]->FirstRow[CurrentAttackerIndex]->bIsAlive || !PlayersHands[0]->FirstRow[CurrentAttackerIndex]->bIsAlive);
+        UE_LOG(LogTemp, Warning, TEXT("CurrentAttackerIndex 1 : %d"), CurrentAttackerIndex);
         CurrentTurnStatus = ETurnStatus::Second_Round_Dice;
-        CurrentAttackerIndex++;
-        if (CurrentAttackerIndex >= PlayersHands[0]->FirstRow.Num())
-            CurrentAttackerIndex = 0;
     }
     else
     {
         FTimerHandle AttackTimerHandle;
+        while(!PlayersHands[1]->FirstRow[CurrentAttackerIndex]->bIsAlive || !PlayersHands[0]->FirstRow[CurrentAttackerIndex]->bIsAlive)
+        {
+            CurrentAttackerIndex++;
+            if (CurrentAttackerIndex >= PlayersHands[0]->FirstRow.Num())
+                CurrentAttackerIndex = 0;
+        }
+        UE_LOG(LogTemp, Warning, TEXT("CurrentAttackerIndex 2 : %d"), CurrentAttackerIndex);
 
         World->GetTimerManager().SetTimer(
             AttackTimerHandle,

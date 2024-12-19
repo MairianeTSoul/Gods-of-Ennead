@@ -96,7 +96,7 @@ void ACardActor::Tick(float DeltaTime)
 		if (UCardUserWidget* CardWidget = Cast<UCardUserWidget>(WidgetComponent->GetWidget()))
 		{
 			FVector DownPosition = GetActorLocation();
-			if (CardWidget->new_hp <= 0 && DownPosition.Z > 1800)
+			if (CardWidget->new_hp <= 0 && DownPosition.Z > 1500 && !bIsAnimating)
 			{
 				DownPosition.Z -= 200.0f;
 				AnimateTo(&DownPosition);
@@ -153,7 +153,7 @@ void ACardActor::Attack(ACardActor* OpponentCard, EDiceResult DiceResult)
 		
 		int Damage = GetDataCard().attack;
 		if (DiceResult == EDiceResult::Black) return;
-		if (DiceResult == EDiceResult::Grey) Damage /= 2;
+		if (DiceResult == EDiceResult::Grey) Damage = static_cast<int>(ceil(Damage / 2));
 		
 		AnimateTo(&OpponentCardLocation);
 		OpponentCard->GetDataCard().hp -= Damage;

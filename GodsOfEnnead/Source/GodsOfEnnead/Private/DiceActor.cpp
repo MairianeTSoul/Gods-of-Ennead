@@ -104,7 +104,9 @@ void ADiceActor::BeginPlay()
 
 void ADiceActor::RollDice()
 {
-	const FVector TargetLocation = StartLocation + FVector(0, 0, 10);
+	FVector TargetLocation = GetActorLocation() + FVector(0, 0, 600);
+	TargetLocation.X = StartLocation.X;
+	TargetLocation.Y = StartLocation.Y;	
 	const FRotator RandomRotation = FRotator(FMath::RandRange(0.f, 360.f), FMath::RandRange(0.f, 360.f), FMath::RandRange(0.f, 360.f));
 	AnimateTo(&TargetLocation, &RandomRotation);
 
@@ -113,8 +115,8 @@ void ADiceActor::RollDice()
 
 void ADiceActor::DropDice()
 {
-	FVector GravityForce = FVector(0, 0, -5000.0f);
-	DiceMesh->AddForce(GravityForce);
+	// FVector GravityForce = FVector(0, 0, -10.0f);
+	// DiceMesh->AddForce(GravityForce);
 }
 
 EDiceResult ADiceActor::GetDiceResult() const
@@ -125,41 +127,28 @@ EDiceResult ADiceActor::GetDiceResult() const
 
 	if (FVector::DotProduct(Arrow1->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Arrow1 points upwards, Result: Black"));
 		return EDiceResult::Black;
 	}
 	if (FVector::DotProduct(Arrow4->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Arrow4 points upwards, Result: Black"));
 		return EDiceResult::Black;
 	}
 	if (FVector::DotProduct(Arrow2->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Arrow2 points upwards, Result: Grey"));
 		return EDiceResult::Grey;
 	}
 	if (FVector::DotProduct(Arrow5->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Arrow5 points upwards, Result: Grey"));
 		return EDiceResult::Grey;
 	}
 	if (FVector::DotProduct(Arrow3->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Arrow3 points upwards, Result: White"));
 		return EDiceResult::White;
 	}
 	if (FVector::DotProduct(Arrow6->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Arrow6 points upwards, Result: White"));
 		return EDiceResult::White;
 	}
-
-	UE_LOG(LogTemp, Warning, TEXT("Arrow1 Direction: %s"), *Arrow1->GetComponentRotation().Vector().ToString());
-	UE_LOG(LogTemp, Warning, TEXT("Arrow2 Direction: %s"), *Arrow2->GetComponentRotation().Vector().ToString());
-	UE_LOG(LogTemp, Warning, TEXT("Arrow3 Direction: %s"), *Arrow3->GetComponentRotation().Vector().ToString());
-	UE_LOG(LogTemp, Warning, TEXT("Arrow4 Direction: %s"), *Arrow4->GetComponentRotation().Vector().ToString());
-	UE_LOG(LogTemp, Warning, TEXT("Arrow5 Direction: %s"), *Arrow5->GetComponentRotation().Vector().ToString());
-	UE_LOG(LogTemp, Warning, TEXT("Arrow6 Direction: %s"), *Arrow6->GetComponentRotation().Vector().ToString());
 
 	return EDiceResult::None;
 }
@@ -176,9 +165,6 @@ void ADiceActor::AnimateTo(const FVector* FinalPos, const FRotator* FinalRot)
 	if (FinalPos)
 	{
 		TargetPosition = *FinalPos;
-	}
-	else
-	{
 	}
 
 	if (FinalRot)
@@ -198,7 +184,6 @@ void ADiceActor::Tick(float DeltaTime)
 	if (!bIsAnimating && GetActorLocation().Z <= 1761 && Velocity.SizeSquared() <= 1.0f && DiceResult == EDiceResult::None)
 	{
 		DiceResult = GetDiceResult();
-		UE_LOG(LogTemp, Warning, TEXT("Result : %hhd"), DiceResult);
 
 		OnDiceStop.Broadcast();
 	}
@@ -212,10 +197,12 @@ void ADiceActor::Tick(float DeltaTime)
 		ElapsedTime += DeltaTime;
 		const float Alpha = FMath::Clamp(ElapsedTime / AnimationDuration, 0.0f, 1.0f);
 
-		const FVector NewPosition = FMath::Lerp(StartPosition, TargetPosition, Alpha);
-		const FRotator NewRotation = FMath::Lerp(StartRotation, TargetRotation, Alpha);
+		const float SmoothAlpha = FMath::InterpEaseOut(0.0f, 1.0f, Alpha, 2.0f);
+
+		const FVector NewPosition = FMath::Lerp(StartPosition, TargetPosition, SmoothAlpha);
+		const FRotator NewRotation = FMath::Lerp(StartRotation, TargetRotation, SmoothAlpha);
 		SetActorLocationAndRotation(NewPosition, NewRotation);
-		
+
 		if (Alpha >= 1.0f)
 		{
 			bIsAnimating = false;
