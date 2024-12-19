@@ -104,7 +104,7 @@ void ADiceActor::BeginPlay()
 
 void ADiceActor::RollDice()
 {
-	FVector TargetLocation = GetActorLocation() + FVector(0, 0, 600);
+	FVector TargetLocation = GetActorLocation() + FVector(0, 0, 750);
 	TargetLocation.X = StartLocation.X;
 	TargetLocation.Y = StartLocation.Y;	
 	const FRotator RandomRotation = FRotator(FMath::RandRange(0.f, 360.f), FMath::RandRange(0.f, 360.f), FMath::RandRange(0.f, 360.f));

@@ -24,8 +24,8 @@ const FVector GPlayer_Card_Location = FVector(7550.0f, 5571.0f, 2216.0f);
 
 const FVector GCard_Scale = FVector(90.0f, 19.471221f, 180.528779f);
 
-const FVector GCamera_Position = FVector(8141.0f, 7166.00f, 4084.00f);
-const FRotator GCamera_Rotation = FRotator(-85.0f, 0.0f, 0.0f);
+const FVector GCamera_Position = FVector(7881.0f, 7166.00f, 4084.00f); // 8141
+const FRotator GCamera_Rotation = FRotator(-77.0f, 0.0f, 0.0f); // -85
 
 
 UCLASS()
