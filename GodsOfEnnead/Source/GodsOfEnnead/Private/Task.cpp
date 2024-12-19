@@ -177,12 +177,12 @@ FString UTask::getDescriptionTask()
 
 	if (Type == ETaskType::RUN)
 	{
-		Description = FString::Printf(TEXT("Задача: Собрать набор из %d карт с последовательным %s"),
+		Description = FString::Printf(TEXT("Task: Collect a set of %d cards with sequential %s"),
 			Count, *StaticEnum<ETaskPattern>()->GetDisplayNameTextByValue(static_cast<int32>(Pattern)).ToString());
 	}
 	else if (Type == ETaskType::SET)
 	{
-		Description = FString::Printf(TEXT("Задача: Собрать %d карт с одинаковым %s"),
+		Description = FString::Printf(TEXT("Task: Collect %d cards with the same %s"),
 			Count, *StaticEnum<ETaskPattern>()->GetDisplayNameTextByValue(static_cast<int32>(Pattern)).ToString());
 
 	}

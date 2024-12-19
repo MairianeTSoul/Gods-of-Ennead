@@ -10,9 +10,9 @@
 UENUM(BlueprintType)
 enum class ETaskPattern : uint8
 {
-	HP     UMETA(DisplayName = "значением HP"),
-	ATTACK UMETA(DisplayName = "значением HA"),
-	NAME   UMETA(DisplayName = "названием")
+	HP     UMETA(DisplayName = "HP value"),
+	ATTACK UMETA(DisplayName = "HA value"),
+	NAME   UMETA(DisplayName = "Name")
 };
 
 UENUM(BlueprintType)

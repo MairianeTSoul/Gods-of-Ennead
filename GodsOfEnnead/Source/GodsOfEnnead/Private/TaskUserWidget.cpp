@@ -132,10 +132,10 @@ bool UTaskUserWidget::setButtonVisibility()
 FText UTaskUserWidget::GetDiceResult()
 {
 	if (DiceResult == EDiceResult::White)
-		return FText::FromString(UTF8TEXT("Белый: Атака в полную силу"));
+		return FText::FromString(UTF8TEXT("White: Full-strength attack"));
 	if (DiceResult == EDiceResult::Grey)
-		return FText::FromString(UTF8TEXT("Серый: Атака в половину силы"));
+		return FText::FromString(UTF8TEXT("Grey: Half-strength attack"));
 	if (DiceResult == EDiceResult::Black)
-		return FText::FromString(UTF8TEXT("Черный: Атака не прошла"));
+		return FText::FromString(UTF8TEXT("Black: Attack failed"));
 	return FText::FromString("");
 }
