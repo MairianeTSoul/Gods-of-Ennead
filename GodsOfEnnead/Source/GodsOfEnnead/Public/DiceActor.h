@@ -81,8 +81,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Materials")
 	TArray<UMaterialInterface*> Materials;
-
-	void ApplyMaterials();
-
+	
 	virtual void Tick(float DeltaTime) override;
 };

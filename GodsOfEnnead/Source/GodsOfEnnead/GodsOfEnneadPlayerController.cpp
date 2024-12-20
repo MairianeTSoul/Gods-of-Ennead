@@ -592,11 +592,13 @@ void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* At
         if (CurrentAttackerIndex >= PlayersHands[0]->FirstRow.Num())
             CurrentAttackerIndex = 0;
         
-        ProcessAttack(World, AttackerHand, DefenderHand, CurrentAttackerIndex, bIsPlayerAttacker, DiceResult);
+        ProcessAttack(World, AttackerHand, DefenderHand, CurrentAttackerIndex, bIsPlayerAttacker, DiceActor->DiceResult);
         return;
     };
 
-    AttackerHand->FirstRow[Index]->Attack(DefenderHand->FirstRow[Index], DiceResult);
+    UE_LOG(LogTemp, Error, TEXT("Attack %hhd"), DiceActor->DiceResult);
+
+    AttackerHand->FirstRow[Index]->Attack(DefenderHand->FirstRow[Index], DiceActor->DiceResult);
 
     if (!DefenderHand->FirstRow[Index]->bIsAlive)
     {
@@ -613,7 +615,7 @@ void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* At
                     DefenderHand->FirstRow[Index] = DefenderHand->SecondRow[Index];
                     DefenderHand->SecondRow[Index] = nullptr;
                 }),
-                1, false
+                0.8, false
             );
         }
         else
@@ -637,7 +639,7 @@ void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* At
                     DelayTimerHandle,
                     this,
                     &AGodsOfEnneadPlayerController::AddResultToViewPort,
-                    2.6f,
+                    3,
                     false
                 );
             }),
@@ -663,16 +665,29 @@ void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* At
                 {
                     for (int32 j = 0; j < DefenderHand->FirstRow.Num(); ++j)
                     {
-                        if (!DefenderHand->FirstRow[j]->bIsAlive)
+                        if (DefenderHand->FirstRow[j]->bIsAlive)
                         {
-                            FVector DeadCardPosition = DefenderHand->FirstRow[j]->GetActorLocation();
-                            DeadCardPosition.Z = AttackerHand->FirstRow[i]->GetActorLocation().Z;
+                            FVector DeadCardPosition = AttackerHand->FirstRow[i]->GetActorLocation();
+                            DeadCardPosition.X = DefenderHand->FirstRow[j]->GetActorLocation().X;
 
                             AttackerHand->FirstRow[i]->AnimateTo(&DeadCardPosition);
+                            DefenderHand->FirstRow.Swap(i, j);
+                            if (DefenderHand->SecondRow.IsValidIndex(j) && DefenderHand->SecondRow[j]->bIsAlive)
+                            {
+                                FTimerHandle SwapCardTimerHandle;
 
-                            DefenderHand->FirstRow[j] = AttackerHand->FirstRow[i];
-                            AttackerHand->FirstRow[i] = nullptr;
-
+                                World->GetTimerManager().SetTimer(
+                                    SwapCardTimerHandle,
+                                    FTimerDelegate::CreateLambda([this, DefenderHand, Index]()
+                                    {
+                                        const FVector NewPos = DefenderHand->FirstRow[Index]->GetActorLocation();
+                                        DefenderHand->SecondRow[Index]->AnimateTo(&NewPos);
+                                        DefenderHand->FirstRow[Index] = DefenderHand->SecondRow[Index];
+                                        DefenderHand->SecondRow[Index] = nullptr;
+                                    }),
+                                    0.8, false
+                                );
+                            }
                             break;
                         }
                     }
@@ -687,7 +702,7 @@ void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* At
                 DelayTimerHandle,
                 this,
                 &AGodsOfEnneadPlayerController::AddResultToViewPort,
-                2.6f,
+                3,
                 false
             );
         }

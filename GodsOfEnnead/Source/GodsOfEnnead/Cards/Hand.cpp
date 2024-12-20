@@ -107,7 +107,7 @@ void UHand::RearrangeCards(int CardsInRow)
 					{
 						if (bIsPlayer) NewPos.X -= 300;
 						else NewPos.X += 300;
-						NewPos.Z -= 5;
+						NewPos.Z -= 10;
 						UE_LOG(LogTemp, Log, TEXT("y index copy%d"), SecondRow.Num());
 						NewPos.Y = FirstRow[SecondRow.Num()]->TargetPosition.Y;
 						SecondRow.Add(CardPositions[i].CardActor);

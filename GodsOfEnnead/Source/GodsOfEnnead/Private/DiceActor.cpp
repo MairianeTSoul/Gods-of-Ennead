@@ -18,12 +18,11 @@ ADiceActor::ADiceActor()
 	DiceMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DiceMesh"));
 	RootComponent = DiceMesh;
 
-	// Устанавливаем стандартную сетку куба (размер 40x40)
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Game/Assets/StaticMeshes/cube.cube"));
 	if (CubeMesh.Succeeded())
 	{
 		DiceMesh->SetStaticMesh(CubeMesh.Object);
-		DiceMesh->SetRelativeScale3D(FVector(1.4f, 1.4f, 1.4f)); 
+		DiceMesh->SetRelativeScale3D(FVector(60, 60, 60)); 
 	}
 
 	Arrow1 = CreateDefaultSubobject<UArrowComponent>(TEXT("Arrow1"));
@@ -62,39 +61,9 @@ ADiceActor::ADiceActor()
 	DiceMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	DiceMesh->SetCollisionResponseToAllChannels(ECR_Block);
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> BlackMaterial(TEXT("/Game/Materials/M_Black.M_Black"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> GreyMaterial(TEXT("/Game/Materials/M_Grey.M_Grey"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> WhiteMaterial(TEXT("/Game/Materials/M_White.M_White"));
-
-	if (BlackMaterial.Succeeded())
-	{
-		Materials.Add(BlackMaterial.Object);
-	}
-	if (GreyMaterial.Succeeded())
-	{
-		Materials.Add(GreyMaterial.Object);
-	}
-	if (WhiteMaterial.Succeeded())
-	{
-		Materials.Add(WhiteMaterial.Object);
-	}
-
 	PhysicsHandle = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("PhysicsHandle"));
 
 	StartLocation = FVector(8177.0f, 8380.0f, 4000.0f);
-}
-
-void ADiceActor::ApplyMaterials()
-{
-	if (Materials.Num() >= 3)
-	{
-		DiceMesh->SetMaterial(0, Materials[0]);  // Сторона 1 (черная)
-		DiceMesh->SetMaterial(1, Materials[1]);  // Сторона 2 (серая)
-		DiceMesh->SetMaterial(2, Materials[2]);  // Сторона 3 (белая)
-		DiceMesh->SetMaterial(3, Materials[0]);  // Сторона 4 (черная)
-		DiceMesh->SetMaterial(4, Materials[1]);  // Сторона 5 (серая)
-		DiceMesh->SetMaterial(5, Materials[2]);  // Сторона 6 (белая)
-	}
 }
 
 void ADiceActor::BeginPlay()
@@ -123,25 +92,25 @@ EDiceResult ADiceActor::GetDiceResult() const
 {
 	const FVector UpDirection = FVector(0, 0, 50);
 
-	const float Tolerance = 0.01f;
+	const float Tolerance = 0.05f;
 
 	if (FVector::DotProduct(Arrow1->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
 	{
 		return EDiceResult::Black;
 	}
-	if (FVector::DotProduct(Arrow4->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
+	if (FVector::DotProduct(Arrow2->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
 	{
 		return EDiceResult::Black;
 	}
-	if (FVector::DotProduct(Arrow2->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
+	if (FVector::DotProduct(Arrow3->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
+	{
+		return EDiceResult::Grey;
+	}
+	if (FVector::DotProduct(Arrow4->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
 	{
 		return EDiceResult::Grey;
 	}
 	if (FVector::DotProduct(Arrow5->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
-	{
-		return EDiceResult::Grey;
-	}
-	if (FVector::DotProduct(Arrow3->GetComponentRotation().Vector(), UpDirection) > 1.0f - Tolerance)
 	{
 		return EDiceResult::White;
 	}
@@ -181,7 +150,7 @@ void ADiceActor::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	FVector Velocity = DiceMesh->GetPhysicsLinearVelocity();
-	if (!bIsAnimating && GetActorLocation().Z <= 1761 && Velocity.SizeSquared() <= 1.0f && DiceResult == EDiceResult::None)
+	if (!bIsAnimating && GetActorLocation().Z <= 1761 && Velocity.SizeSquared() <= 0.3f)
 	{
 		DiceResult = GetDiceResult();
 
