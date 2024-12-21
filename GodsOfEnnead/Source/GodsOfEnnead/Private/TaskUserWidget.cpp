@@ -3,6 +3,7 @@
 
 #include "TaskUserWidget.h"
 
+
 #include "GodsOfEnnead/GodsOfEnneadPlayerController.h"
 
 // bool URule::checkRule(ACardActor& Card)
@@ -137,5 +138,26 @@ FText UTaskUserWidget::GetDiceResult()
 		return FText::FromString(UTF8TEXT("Grey: Half-strength attack"));
 	if (DiceResult == EDiceResult::Black)
 		return FText::FromString(UTF8TEXT("Black: Attack failed"));
+	return FText::FromString("");
+}
+
+FText UTaskUserWidget::GetHintText()
+{
+	if (TurnStatus == ETurnStatus::Waiting)
+		return FText::FromString(UTF8TEXT("Waiting"));
+	if (TurnStatus == ETurnStatus::Waiting_Choose)
+		return FText::FromString(UTF8TEXT("Waiting Choose"));
+	if (TurnStatus == ETurnStatus::Player_Turn)
+		return FText::FromString(UTF8TEXT("Player Turn"));
+	if (TurnStatus == ETurnStatus::Computer_Turn)
+		return FText::FromString(UTF8TEXT("Computer Turn"));
+	if (TurnStatus == ETurnStatus::Second_Round_Start)
+		return FText::FromString(UTF8TEXT("Second Round Start"));
+	if (TurnStatus == ETurnStatus::Second_Round_Player)
+		return FText::FromString(UTF8TEXT("Second Round Player"));
+	if (TurnStatus == ETurnStatus::Second_Round_Waiting)
+		return FText::FromString(UTF8TEXT("Second Round Waiting"));
+	if (TurnStatus == ETurnStatus::Second_Round_Dice)
+		return FText::FromString(UTF8TEXT("Second Round Dice"));
 	return FText::FromString("");
 }
