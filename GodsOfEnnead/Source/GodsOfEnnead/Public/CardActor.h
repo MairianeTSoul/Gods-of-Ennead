@@ -52,13 +52,14 @@ public:
 	void SetDataCard(int hp, int attack, FString cardName);
 	void Attack(ACardActor* OpponentCard, EDiceResult DiceResult);
 
-	void AnimateTo(const FVector* FinalPos = nullptr, const FRotator* FinalRot = nullptr);
+	void AnimateTo(const FVector* FinalPos = nullptr, const FRotator* FinalRot = nullptr,  bool bIsAttack = false);
 	virtual void Tick(float DeltaTime) override;
 
 	bool bIsAlive = true;
 	FVector TargetPosition;
 private:
 	bool bIsAnimating = false;
+	bool bIsAttackAnimating = false;
 	bool bAnimatePosition = false;
 	bool bAnimateRotation = false;
 	

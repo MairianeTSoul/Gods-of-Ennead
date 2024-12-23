@@ -91,6 +91,7 @@ bool UTask::CheckTaskCompletion(const TArray<FDataCardStruct>& Cards, bool bIsCo
 	}
 
 	if (bIsCompleteStatusSet) bIsComplete = false;
+	else bIsComputerComplete = false;
 	return false;
 }
 

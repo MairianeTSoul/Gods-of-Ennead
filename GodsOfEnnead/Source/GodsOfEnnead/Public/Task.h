@@ -41,8 +41,8 @@ public:
 	ETaskType Type;
 
 	UPROPERTY()
-	bool bIsComplete;
-	bool bIsComputerComplete;
+	bool bIsComplete = false;
+	bool bIsComputerComplete = false;
 
 	UTask();
 

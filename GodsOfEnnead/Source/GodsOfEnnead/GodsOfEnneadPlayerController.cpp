@@ -172,11 +172,10 @@ void AGodsOfEnneadPlayerController::TakeCard()
             if (CurrentTurnStatus == ETurnStatus::Second_Round_Dice)
             {
                 ClickedDice->RollDice();
-                CurrentTurnStatus = ETurnStatus::Second_Round_Waiting;
+                CurrentTurnStatus = ETurnStatus::Waiting;
                 DiceActor->OnDiceStop.AddDynamic(this, &AGodsOfEnneadPlayerController::OnDiceStopped);
             }
         }
-        CurrentTaskController->TaskWidget->TurnStatus = CurrentTurnStatus;
     }
 }
 
@@ -184,6 +183,7 @@ void AGodsOfEnneadPlayerController::OnDiceStopped()
 {
     DiceActor->OnDiceStop.Clear();
     CurrentTaskController->TaskWidget->DiceResult = DiceActor->DiceResult;
+    CurrentTurnStatus = ETurnStatus::Second_Round_Waiting;
     ProcessAttack(GetWorld(), PlayersHands[1], PlayersHands[0], CurrentAttackerIndex, true, DiceActor->DiceResult);
 }
 
@@ -211,7 +211,14 @@ void AGodsOfEnneadPlayerController::StartGame()
     DealCards(GMaxInHand, true);
 
     PlayersHands[1]->CheckTask(CurrentTaskController->Task);
-    PlayRound();
+    FTimerHandle DealTimer;
+    GetWorld()->GetTimerManager().SetTimer(
+    DealTimer,
+    this,
+    &AGodsOfEnneadPlayerController::PlayRound,
+    5.0f,
+    false
+    );
 }
 
 void AGodsOfEnneadPlayerController::PlayRound()
@@ -516,8 +523,6 @@ void AGodsOfEnneadPlayerController::OnReadyButtonClicked()
     int TotalAnimations = 0;
     UE_LOG(LogTemp, Error, TEXT("OnReadyButtonClicked"));
     
-    CurrentTurnStatus = ETurnStatus::Second_Round_Waiting;
-
     for (int i = 0; i < 2; i++)
     {
         for (ACardActor* Card : PlayersHands[i]->SecondRow)
@@ -673,22 +678,23 @@ void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* At
 
                             AttackerHand->FirstRow[i]->AnimateTo(&DeadCardPosition);
                             DefenderHand->FirstRow.Swap(i, j);
-                            if (DefenderHand->SecondRow.IsValidIndex(j) && DefenderHand->SecondRow[j]->bIsAlive)
-                            {
-                                FTimerHandle SwapCardTimerHandle;
+                            if (DefenderHand->SecondRow.IsValidIndex(j))
+                                if (DefenderHand->SecondRow[j]->bIsAlive)
+                                {
+                                    FTimerHandle SwapCardTimerHandle;
 
-                                World->GetTimerManager().SetTimer(
-                                    SwapCardTimerHandle,
-                                    FTimerDelegate::CreateLambda([this, DefenderHand, Index]()
-                                    {
-                                        const FVector NewPos = DefenderHand->FirstRow[Index]->GetActorLocation();
-                                        DefenderHand->SecondRow[Index]->AnimateTo(&NewPos);
-                                        DefenderHand->FirstRow[Index] = DefenderHand->SecondRow[Index];
-                                        DefenderHand->SecondRow[Index] = nullptr;
-                                    }),
-                                    0.8, false
-                                );
-                            }
+                                    World->GetTimerManager().SetTimer(
+                                        SwapCardTimerHandle,
+                                        FTimerDelegate::CreateLambda([this, DefenderHand, Index]()
+                                        {
+                                            const FVector NewPos = DefenderHand->FirstRow[Index]->GetActorLocation();
+                                            DefenderHand->SecondRow[Index]->AnimateTo(&NewPos);
+                                            DefenderHand->FirstRow[Index] = DefenderHand->SecondRow[Index];
+                                            DefenderHand->SecondRow[Index] = nullptr;
+                                        }),
+                                        0.8, false
+                                    );
+                                }
                             break;
                         }
                     }
@@ -696,7 +702,7 @@ void AGodsOfEnneadPlayerController::ProcessAttack(const UWorld* World, UHand* At
             }
         }
         else {
-            bIsPlayerWin = bIsPlayerAttacker;
+            bIsPlayerWin = PlayersHands[1]->AliveCards > PlayersHands[0]->AliveCards;
             bIsGameOver = true;
             FTimerHandle DelayTimerHandle;
             GetWorld()->GetTimerManager().SetTimer(
