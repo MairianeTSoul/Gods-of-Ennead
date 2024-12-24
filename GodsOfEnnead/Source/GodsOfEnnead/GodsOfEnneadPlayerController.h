@@ -46,7 +46,7 @@ public:
 
 	bool bIsPlayerWin = false;
 	bool bIsGameOver = false;
-	int CurrentAttackerIndex;
+	int CurrentAttackerIndex = 0;
 
 	void ProcessAttack(const UWorld* World, UHand* AttackerHand, UHand* DefenderHand, int32 Index, bool bIsPlayerAttacker, EDiceResult
 	                   DiceResult);
@@ -66,10 +66,10 @@ public:
 
 	
 	UPROPERTY()
-	ACardActor* SelectedCard;
+	ACardActor* SelectedCard = nullptr;
 	
 	UPROPERTY()
-	ADiceActor* DiceActor;
+	ADiceActor* DiceActor = nullptr;
 
 	void SelectCard(ACardActor* Card);
 
@@ -92,14 +92,14 @@ public:
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cards")
-	ACardActor* SelectedCardActor;
+	ACardActor* SelectedCardActor = nullptr;
 
 	virtual void SetupInputComponent() override;
 	void ExitToMainMenu();
 
 	// Task
 	UPROPERTY()
-	TObjectPtr<UTaskController> CurrentTaskController;
+	TObjectPtr<UTaskController> CurrentTaskController = nullptr;
 
 	UFUNCTION()
 	void DisplayTask();
@@ -119,11 +119,11 @@ private:
 	UPROPERTY()
 	FRotator EndRotation;   // Конечная позиция игрока
 	UPROPERTY()
-	float MoveDuration;    // Время перемещения
+	float MoveDuration = 0;    // Время перемещения
 	UPROPERTY()
-	float ElapsedTime;     // Время, прошедшее с начала движения
+	float ElapsedTime = 0;     // Время, прошедшее с начала движения
 	UPROPERTY()
-	bool bIsMoving;        // Флаг, указывающий на движение
+	bool bIsMoving = false;        // Флаг, указывающий на движение
 
 	UPROPERTY()
 	FTimerHandle SpawnTimerHandle;

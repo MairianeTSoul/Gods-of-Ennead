@@ -54,21 +54,23 @@ ADiceActor::ADiceActor()
 	Arrow6->SetupAttachment(DiceMesh);
 	Arrow6->SetRelativeLocation(FVector(0, -50, 0)); // Сторона 6 (задняя)
 	Arrow6->SetRelativeRotation(FRotator(-90, 0, 0));  // Направлено назад
-
-	// Настройка физических свойств кубика
-	DiceMesh->SetSimulatePhysics(true);
-	DiceMesh->SetMassOverrideInKg(NAME_None, 1.0f);
-	DiceMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	DiceMesh->SetCollisionResponseToAllChannels(ECR_Block);
-
-	PhysicsHandle = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("PhysicsHandle"));
-
-	StartLocation = FVector(8177.0f, 8380.0f, 4000.0f);
 }
 
 void ADiceActor::BeginPlay()
 {
 	Super::BeginPlay();
+    
+	if (DiceMesh)
+	{
+		DiceMesh->SetSimulatePhysics(true);
+		DiceMesh->SetMassOverrideInKg(NAME_None, 1.0f);
+		DiceMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		DiceMesh->SetCollisionResponseToAllChannels(ECR_Block);
+
+		PhysicsHandle = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("PhysicsHandle"));
+
+		StartLocation = FVector(8177.0f, 8380.0f, 4000.0f);
+	}
 }
 
 void ADiceActor::RollDice()

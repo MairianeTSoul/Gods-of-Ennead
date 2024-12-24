@@ -11,20 +11,13 @@
 #include "Blueprint/UserWidget.h"
 #include "CardUserWidget.h"
 #include "DiceActor.h"
+#include "GadsOfEnneadCharacter.h"
 #include "ResultUserWidget.h"
 #include "Task.h"
 #include "GameFramework/Character.h"
 
 AGodsOfEnneadPlayerController::AGodsOfEnneadPlayerController()
 {
-    static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClass(TEXT("/Game/BP/BP_Character.BP_Character"));
-    if (PlayerPawnClass.Succeeded())
-    {
-        FVector ddSpawnLocation = FVector(0.0f, 0.0f, 300.0f);
-        FRotator ddSpawnRotation = FRotator(0.0f, 0.0f, 0.0f);
-        GetWorld()->SpawnActor<ACharacter>(PlayerPawnClass.Class, ddSpawnLocation, ddSpawnRotation);
-    };
-
     static ConstructorHelpers::FObjectFinder<UDataTable> dataCardsObject(TEXT("DataTable'/Game/DataBase/DT_They.DT_They'"));
     if (dataCardsObject.Succeeded())
     {
@@ -939,8 +932,7 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
             WidgetComponent->SetTwoSided(true);
             WidgetComponent->SetPivot(FVector2D(0.5f, 0.5f));
 
-            const TSubclassOf<UUserWidget> WidgetClass = LoadClass<UCardUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Card.WBP_Card_C"));
-            if (WidgetClass)
+            if (const TSubclassOf<UUserWidget> WidgetClass = LoadClass<UCardUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Card.WBP_Card_C")))
             {
                 WidgetComponent->SetWidgetClass(WidgetClass);
                 WidgetComponent->SetVisibility(true);
