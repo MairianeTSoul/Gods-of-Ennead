@@ -14,6 +14,7 @@
 #include "GadsOfEnneadCharacter.h"
 #include "ResultUserWidget.h"
 #include "Task.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "GameFramework/Character.h"
 
 AGodsOfEnneadPlayerController::AGodsOfEnneadPlayerController()
@@ -931,8 +932,8 @@ void AGodsOfEnneadPlayerController::SpawnActorStep(const FVector& StartSpawnLoca
             WidgetComponent->SetWidgetSpace(EWidgetSpace::World);
             WidgetComponent->SetTwoSided(true);
             WidgetComponent->SetPivot(FVector2D(0.5f, 0.5f));
-
-            if (const TSubclassOf<UUserWidget> WidgetClass = LoadClass<UCardUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Card.WBP_Card_C")))
+            
+            if (const TSubclassOf<UCardUserWidget> WidgetClass = LoadClass<UCardUserWidget>(nullptr, TEXT("/Game/BP/UI/WBP_Card.WBP_Card_C")))
             {
                 WidgetComponent->SetWidgetClass(WidgetClass);
                 WidgetComponent->SetVisibility(true);
